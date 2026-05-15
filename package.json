@@ -1,0 +1,16 @@
+{
+  "name": "maze-heli-command",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "three": "^0.184.0",
+    "ws": "^8.17.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.44.1"
+  }
+}

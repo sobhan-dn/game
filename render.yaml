@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: maze-heli-command
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /
