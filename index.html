@@ -3,72 +3,80 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maze Heli Command</title>
+    <title>Void Spheres</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "three/addons/": "./node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./game.js"></script>
   </head>
   <body>
-    <main class="game-shell">
-      <canvas id="gameCanvas" aria-label="Maze Heli Command"></canvas>
+    <div id="app">
+      <canvas id="game"></canvas>
 
-      <section id="startPanel" class="start-panel" aria-label="شروع بازی">
-        <div class="start-copy">
-          <p class="kicker">دو نفره آنلاین روی سرور محلی</p>
-          <h1>Maze Heli Command</h1>
-          <p>
-            از بالای maze فرماندهی کن، سربازهای دشمن را با تیر بزن و روی نیروهای
-            خودی شیلد بنداز تا سالم به پایگاه برسند.
+      <div id="top-alert" aria-hidden="true">
+        <div id="top-alert-fill"></div>
+        <div id="top-alert-glow"></div>
+        <span id="top-alert-text">سلامتی</span>
+      </div>
+
+      <div id="hud">
+        <div class="panel">
+          <span class="label">سلامتی</span>
+          <strong id="health">100</strong>
+        </div>
+        <div class="panel">
+          <span class="label">دشمن باقی‌مانده</span>
+          <strong id="enemies">0</strong>
+        </div>
+        <div class="panel status-panel">
+          <span class="label">وضعیت</span>
+          <strong id="status">برای شروع کلیک کنید</strong>
+        </div>
+      </div>
+
+      <div id="crosshair" aria-hidden="true">
+        <span></span>
+        <span></span>
+      </div>
+
+      <div id="touch-controls" aria-hidden="true">
+        <div id="touch-stick">
+          <span id="touch-stick-knob"></span>
+        </div>
+        <div id="touch-actions">
+          <button id="touch-jump" class="touch-button" type="button">پرش</button>
+          <button id="touch-fire" class="touch-button fire" type="button">شلیک</button>
+        </div>
+      </div>
+
+      <div id="overlay" class="visible">
+        <div class="card">
+          <p class="eyebrow">Void Spheres</p>
+          <h1>پرش بین کره‌های شناور</h1>
+          <p class="lead">
+            یک نمونه‌ی سوم‌شخص ۳بعدی با کره‌های معلقِ متحرک و چرخان، پرش بین آن‌ها،
+            و نبرد تیراندازی با دشمن‌هایی که از روی سکوهای خودشان شما را هدف می‌گیرند.
           </p>
-        </div>
-        <div class="start-actions">
-          <button id="joinBlue" type="button">ورود به تیم آبی</button>
-          <button id="joinRed" type="button">ورود به تیم قرمز</button>
-        </div>
-        <dl class="controls">
-          <div><dt>حرکت</dt><dd>WASD یا کلیدهای جهت</dd></div>
-          <div><dt>هدف‌گیری</dt><dd>موس</dd></div>
-          <div><dt>شلیک</dt><dd>کلیک چپ یا Space</dd></div>
-          <div><dt>شیلد</dt><dd>کلیک راست یا Shift</dd></div>
-          <div><dt>دوربین</dt><dd>F برای تمام‌صفحه</dd></div>
-        </dl>
-      </section>
 
-      <header class="hud" aria-live="polite">
-        <div>
-          <span class="label">تیم</span>
-          <strong id="teamLabel">تماشاچی</strong>
-        </div>
-        <div>
-          <span class="label">آبی</span>
-          <strong id="blueScore">0</strong>
-        </div>
-        <div>
-          <span class="label">قرمز</span>
-          <strong id="redScore">0</strong>
-        </div>
-        <div>
-          <span class="label">وضعیت سرور</span>
-          <strong id="serverStatus">قطع</strong>
-        </div>
-      </header>
+          <ul class="controls">
+            <li><kbd>W A S D</kbd> حرکت روی سطح کره</li>
+            <li><kbd>Space</kbd> پرش و عبور به کره‌ی بعدی</li>
+            <li><kbd>Mouse</kbd> چرخاندن دوربین</li>
+            <li><kbd>Click</kbd> شلیک</li>
+            <li><kbd>Touch</kbd> روی موبایل: سمت چپ حرکت، سمت راست چرخش، دکمه‌ها پرش/شلیک</li>
+            <li><kbd>Esc</kbd> آزاد کردن ماوس</li>
+          </ul>
 
-      <aside class="hint-strip">
-        <span id="messageLine">برای شروع یکی از تیم‌ها را انتخاب کن.</span>
-      </aside>
-
-      <nav class="touch-controls" aria-label="کنترل لمسی">
-        <div class="move-pad">
-          <button data-touch-key="w" type="button" aria-label="جلو">▲</button>
-          <button data-touch-key="a" type="button" aria-label="چپ">◀</button>
-          <button data-touch-key="s" type="button" aria-label="عقب">▼</button>
-          <button data-touch-key="d" type="button" aria-label="راست">▶</button>
+          <button id="start-button" type="button">شروع بازی</button>
+          <p id="overlay-note" class="note">برای تیراندازی بهتر، بعد از شروع روی صفحه کلیک کنید تا ماوس قفل شود.</p>
         </div>
-        <div class="action-pad">
-          <button data-touch-action="fire" type="button">تیر</button>
-          <button data-touch-action="shield" type="button">شیلد</button>
-        </div>
-      </nav>
-    </main>
-
-    <script type="module" src="./script.js"></script>
+      </div>
+    </div>
   </body>
 </html>
