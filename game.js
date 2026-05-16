@@ -131,6 +131,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       alive: true,
       cooldown: 0,
       invuln: 0,
+      jumpGrace: 0,
       remote: id === "p2",
     };
   }
@@ -284,6 +285,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     player.alive = true;
     player.grounded = true;
     player.cooldown = 0;
+    player.jumpGrace = 0;
     syncMesh(player);
   }
 
@@ -338,6 +340,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (!player || !player.alive) return;
     player.cooldown = Math.max(0, player.cooldown - dt);
     player.invuln = Math.max(0, (player.invuln || 0) - dt);
+    player.jumpGrace = Math.max(0, (player.jumpGrace || 0) - dt);
     if (player.grounded && player.platform) player.pos.add(player.platform.delta);
 
     const platform = nearestPlatform(player.pos);
@@ -362,19 +365,23 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     player.vel.copy(tangent).addScaledVector(player.up, normalSpeed);
 
     if (input.jump && player.grounded) {
-      player.vel.addScaledVector(player.up, 18);
-      player.vel.addScaledVector(move.lengthSq() ? move : forward, 11);
+      player.vel.addScaledVector(player.up, 25);
+      player.vel.addScaledVector(move.lengthSq() ? move : forward, 19);
       player.grounded = false;
+      player.jumpGrace = 0.42;
       playSweep(240, 520, 0.16, 0.055, "triangle");
       spawnEffect(player.pos, player.color, 0.35);
     }
     input.jump = false;
     const gravityUp = tmp.copy(player.pos).sub(platform.center).normalize();
-    const gravityPull = player.grounded ? 42 : 118;
+    const launchPhase = player.jumpGrace > 0;
+    const gravityPull = player.grounded ? 42 : launchPhase ? 48 : 122;
     player.vel.addScaledVector(gravityUp, -gravityPull * dt);
     if (!player.grounded) {
       const surfaceGap = player.pos.distanceTo(platform.center) - (platform.radius + 0.9);
-      const magnetStrength = THREE.MathUtils.clamp(1 - surfaceGap / 38, 0.18, 1) * 82;
+      const magnetStrength = launchPhase
+        ? THREE.MathUtils.clamp(1 - surfaceGap / 16, 0, 0.35) * 22
+        : THREE.MathUtils.clamp(1 - surfaceGap / 42, 0.2, 1) * 94;
       player.vel.addScaledVector(gravityUp, -magnetStrength * dt);
     }
     player.pos.addScaledVector(player.vel, dt);
@@ -408,11 +415,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
         const inward = player.vel.dot(normal);
         if (inward < 0) player.vel.addScaledVector(normal, -inward);
       }
-      if (Math.abs(dist - surface) < 1.65 && player.vel.dot(normal) < 22) {
+      if (Math.abs(dist - surface) < 2.05 && player.vel.dot(normal) < 25) {
         player.pos.copy(platform.center).addScaledVector(normal, surface);
         const normalSpeed = player.vel.dot(normal);
         if (normalSpeed < 0) player.vel.addScaledVector(normal, -normalSpeed);
         player.grounded = true;
+        player.jumpGrace = 0;
         player.platform = platform;
         player.up.copy(normal);
       }
