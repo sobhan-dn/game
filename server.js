@@ -52,6 +52,34 @@ const server = http.createServer(async (req, res) => {
 function patchGameScript(source) {
   return source
     .replace(
+      /state=\{started:false,ended:false,msg:"[^"]+"\}/,
+      'state={started:false,ended:false,msg:"Tap Start",timeLeft:120,nextEnemySpawn:0}'
+    )
+    .replace(
+      /const players=\{p1:actor\("p1","[^"]+",/,
+      'const players={p1:actor("p1","Player 1",'
+    )
+    .replace(
+      /p2:actor\("p2","[^"]+",/,
+      'p2:actor("p2","Player 2",'
+    )
+    .replace(
+      /state\.msg="[^"]+"; overlay\?\.classList\.remove\("show"\);/,
+      'state.msg="Match live"; overlay?.classList.remove("show");'
+    )
+    .replace(
+      /scores\.p2=0;state\.started=false;state\.ended=false;state\.msg="[^"]+";/,
+      'scores.p2=0;state.started=false;state.ended=false;state.msg="Tap Start";state.timeLeft=120;state.nextEnemySpawn=0;'
+    )
+    .replace(
+      /ws\.onopen=\(\)=>\{net\.connected=true;state\.msg="[^"]+";updateUi\(\);\};/,
+      'ws.onopen=()=>{net.connected=true;state.msg="Online server connected";updateUi();};'
+    )
+    .replace(
+      /function updateUi\(\)\{[\s\S]*?\}\nfunction local/,
+      'function updateUi(){if(p1El)p1El.textContent=Math.ceil(players.p1.health);if(p2El)p2El.textContent=Math.ceil(players.p2.health);if(s1El)s1El.textContent=`${scores.p1} points`;if(s2El)s2El.textContent=`${scores.p2} points`;const timerEl=document.getElementById("timer");if(timerEl){const v=Math.max(0,Math.ceil(state.timeLeft||120));timerEl.textContent=`${Math.floor(v/60)}:${String(v%60).padStart(2,"0")}`;}const role=net.role==="spectator"?"Spectator":net.role==="p2"?"Player 2":"Player 1";if(statusEl)statusEl.textContent=`${state.msg} | ${role} | ${net.peer?"Rival online":"Waiting for rival"}`;}\nfunction local'
+    )
+    .replace(
       "health:100,alive:true,grounded:true,platform:null,cool:0,target:null};",
       "health:100,alive:true,grounded:true,platform:null,cool:0,jumpGrace:0,target:null};"
     )
