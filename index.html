@@ -1,74 +1,27 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maze Heli Command</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <main class="game-shell">
-      <canvas id="gameCanvas" aria-label="Maze Heli Command"></canvas>
-
-      <section id="startPanel" class="start-panel" aria-label="شروع بازی">
-        <div class="start-copy">
-          <p class="kicker">دو نفره آنلاین روی سرور محلی</p>
-          <h1>Maze Heli Command</h1>
-          <p>
-            از بالای maze فرماندهی کن، سربازهای دشمن را با تیر بزن و روی نیروهای
-            خودی شیلد بنداز تا سالم به پایگاه برسند.
-          </p>
-        </div>
-        <div class="start-actions">
-          <button id="joinBlue" type="button">ورود به تیم آبی</button>
-          <button id="joinRed" type="button">ورود به تیم قرمز</button>
-        </div>
-        <dl class="controls">
-          <div><dt>حرکت</dt><dd>WASD یا کلیدهای جهت</dd></div>
-          <div><dt>هدف‌گیری</dt><dd>موس</dd></div>
-          <div><dt>شلیک</dt><dd>کلیک چپ یا Space</dd></div>
-          <div><dt>شیلد</dt><dd>کلیک راست یا Shift</dd></div>
-          <div><dt>دوربین</dt><dd>F برای تمام‌صفحه</dd></div>
-        </dl>
-      </section>
-
-      <header class="hud" aria-live="polite">
-        <div>
-          <span class="label">تیم</span>
-          <strong id="teamLabel">تماشاچی</strong>
-        </div>
-        <div>
-          <span class="label">آبی</span>
-          <strong id="blueScore">0</strong>
-        </div>
-        <div>
-          <span class="label">قرمز</span>
-          <strong id="redScore">0</strong>
-        </div>
-        <div>
-          <span class="label">وضعیت سرور</span>
-          <strong id="serverStatus">قطع</strong>
-        </div>
-      </header>
-
-      <aside class="hint-strip">
-        <span id="messageLine">برای شروع یکی از تیم‌ها را انتخاب کن.</span>
-      </aside>
-
-      <nav class="touch-controls" aria-label="کنترل لمسی">
-        <div class="move-pad">
-          <button data-touch-key="w" type="button" aria-label="جلو">▲</button>
-          <button data-touch-key="a" type="button" aria-label="چپ">◀</button>
-          <button data-touch-key="s" type="button" aria-label="عقب">▼</button>
-          <button data-touch-key="d" type="button" aria-label="راست">▶</button>
-        </div>
-        <div class="action-pad">
-          <button data-touch-action="fire" type="button">تیر</button>
-          <button data-touch-action="shield" type="button">شیلد</button>
-        </div>
-      </nav>
-    </main>
-
-    <script type="module" src="./script.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Void Spheres Duel</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+  <script type="module" src="./game.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="hud">
+    <div class="panel"><span>بازیکن ۱</span><b id="p1">100</b><small id="s1">0 امتیاز</small></div>
+    <div class="panel"><span>بازیکن ۲</span><b id="p2">100</b><small id="s2">0 امتیاز</small></div>
+    <div class="panel wide"><span>وضعیت</span><b id="status">اتصال...</b></div>
+  </div>
+  <div id="overlay" class="show">
+    <div class="card">
+      <p class="eyebrow">Void Spheres Duel</p>
+      <h1>دوئل آنلاین روی کره‌ها</h1>
+      <p>نفر اول بازیکن ۱ و نفر دوم بازیکن ۲ می‌شود. با W A S D حرکت کن، Space بپر، کلیک کن برای شلیک.</p>
+      <button id="start">شروع بازی</button>
+    </div>
+  </div>
+</body>
 </html>
