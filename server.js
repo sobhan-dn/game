@@ -150,6 +150,7 @@ wss.on("connection", (socket) => {
       "damage",
       "player-damage",
       "enemy-down",
+      "enemy-spawn",
       "restart",
     ]);
 

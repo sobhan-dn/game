@@ -1,8 +1,10 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Void Spheres Duel</title>
     <link rel="stylesheet" href="./styles.css" />
     <script type="importmap">
@@ -22,27 +24,31 @@
       <div id="top-alert" aria-hidden="true">
         <div id="top-alert-fill"></div>
         <div id="top-alert-glow"></div>
-        <span id="top-alert-text">سلامتی</span>
+        <span id="top-alert-text">HEALTH</span>
       </div>
 
       <div id="hud">
         <div class="panel player-panel p1-panel">
-          <span class="label">بازیکن ۱</span>
+          <span class="label">PLAYER 1</span>
           <strong id="p1-health">100</strong>
-          <small><span id="p1-score">0</span> امتیاز</small>
+          <small><span id="p1-score">0</span> points</small>
         </div>
         <div class="panel player-panel p2-panel">
-          <span class="label">بازیکن ۲</span>
+          <span class="label">PLAYER 2</span>
           <strong id="p2-health">100</strong>
-          <small><span id="p2-score">0</span> امتیاز</small>
+          <small><span id="p2-score">0</span> points</small>
         </div>
         <div class="panel">
-          <span class="label">دشمن</span>
+          <span class="label">RED UNITS</span>
           <strong id="enemies">0</strong>
         </div>
+        <div class="panel timer-panel">
+          <span class="label">TIME</span>
+          <strong id="timer">2:00</strong>
+        </div>
         <div class="panel status-panel">
-          <span class="label">وضعیت</span>
-          <strong id="status">برای شروع کلیک کنید</strong>
+          <span class="label">STATUS</span>
+          <strong id="status">Tap Start</strong>
         </div>
       </div>
 
@@ -56,32 +62,32 @@
           <span id="touch-stick-knob"></span>
         </div>
         <div id="touch-actions">
-          <button id="touch-jump" class="touch-button" type="button">پرش</button>
-          <button id="touch-fire" class="touch-button fire" type="button">شلیک</button>
+          <button id="touch-jump" class="touch-button" type="button">JUMP</button>
+          <button id="touch-fire" class="touch-button fire" type="button">FIRE</button>
         </div>
       </div>
 
       <div id="overlay" class="visible">
         <div class="card">
           <p class="eyebrow">Void Spheres Duel</p>
-          <h1>دوئل روی کره‌های شناور</h1>
+          <h1>Two-minute sphere duel</h1>
           <p class="lead">
-            دو بازیکن روی کره‌های معلق با بافت‌های یخی، گدازه‌ای، جنگلی و طلایی رقابت می‌کنند؛
-            دشمن‌ها هم وسط میدان فشار می‌آورند و هر حذف امتیاز می‌سازد.
+            Score for every red unit you destroy and every online rival hit you land.
+            When the clock hits zero, the higher score wins.
           </p>
 
           <ul class="controls">
-            <li><kbd>Online</kbd> نفر اول بازیکن ۱ و نفر دوم بازیکن ۲ می‌شود</li>
-            <li><kbd>W A S D</kbd> حرکت بازیکن خودت</li>
-            <li><kbd>Space / Shift</kbd> پرش</li>
-            <li><kbd>Click / Enter</kbd> شلیک</li>
-            <li><kbd>Mouse</kbd> چرخاندن دوربین</li>
-            <li><kbd>Touch</kbd> روی موبایل: سمت چپ حرکت، سمت راست چرخش، دکمه‌ها پرش/شلیک</li>
-            <li><kbd>Esc</kbd> آزاد کردن ماوس</li>
+            <li><kbd>Online</kbd> First browser is Player 1, second browser is Player 2</li>
+            <li><kbd>W A S D</kbd> Move across the spheres</li>
+            <li><kbd>Space / Shift</kbd> Jump between spheres</li>
+            <li><kbd>Click / Enter</kbd> Fire through the crosshair</li>
+            <li><kbd>Mouse</kbd> Aim the camera</li>
+            <li><kbd>Touch</kbd> iPhone: left stick moves, right side aims, buttons jump/fire</li>
+            <li><kbd>Timer</kbd> 2 minutes, highest score wins</li>
           </ul>
 
-          <button id="start-button" type="button">شروع بازی</button>
-          <p id="overlay-note" class="note">برای تیراندازی بهتر، بعد از شروع روی صفحه کلیک کنید تا ماوس قفل شود.</p>
+          <button id="start-button" type="button">Start Match</button>
+          <p id="overlay-note" class="note">For best aim, tap the playfield once after starting.</p>
         </div>
       </div>
     </div>

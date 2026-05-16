@@ -11,6 +11,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const p1ScoreValue = byId("p1-score", "s1");
   const p2ScoreValue = byId("p2-score", "s2");
   const enemiesValue = document.getElementById("enemies");
+  const timerValue = document.getElementById("timer");
   const statusValue = document.getElementById("status");
   const topAlertFill = document.getElementById("top-alert-fill");
   const topAlertText = document.getElementById("top-alert-text");
@@ -41,19 +42,22 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const input = { f: false, b: false, l: false, r: false, jump: false, fire: false };
   const cameraState = { forward: new THREE.Vector3(1, 0, 0) };
   const net = { ws: null, role: "p1", connected: false, peer: false, last: 0 };
-  const state = { started: false, ended: false, message: "برای شروع کلیک کنید" };
+  const roundSeconds = 120;
+  const state = { started: false, ended: false, message: "Tap Start", timeLeft: roundSeconds, nextEnemySpawn: 0 };
   const scores = { p1: 0, p2: 0 };
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   const audio = { context: null, master: null, music: null, sfx: null, nextBeat: 0, step: 0 };
 
   const players = {
-    p1: makePlayer("p1", "بازیکن ۱", 0x65f7df, 0x5ef5ff),
-    p2: makePlayer("p2", "بازیکن ۲", 0xffbd57, 0xff8a25),
+    p1: makePlayer("p1", "Player 1", 0x65f7df, 0x5ef5ff),
+    p2: makePlayer("p2", "Player 2", 0xffbd57, 0xff8a25),
   };
   const platforms = [];
   const enemies = [];
   const bullets = [];
   const effects = [];
+  let lookTouchId = null;
+  let lookTouchX = 0;
 
   const keys = {
     KeyW: "f",
@@ -132,6 +136,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       cooldown: 0,
       invuln: 0,
       jumpGrace: 0,
+      respawnTimer: 0,
       remote: id === "p2",
     };
   }
@@ -180,14 +185,16 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     scores.p2 = 0;
     state.started = false;
     state.ended = false;
-    state.message = "برای شروع کلیک کنید";
+    state.message = "Tap Start";
+    state.timeLeft = roundSeconds;
+    state.nextEnemySpawn = 0;
     document.body.classList.remove("game-over", "target-locked");
     createPlatforms();
     placePlayer(players.p1, platforms[0], new THREE.Vector3(0, 1, 0));
     placePlayer(players.p2, platforms[0], new THREE.Vector3(0.45, 0.88, 0.12).normalize());
     cameraState.forward.copy(players[net.role] ? players[net.role].forward : players.p1.forward);
     createEnemies();
-    showOverlay("شروع بازی", "دو مرورگر باز کن؛ نفر اول بازیکن ۱ و نفر دوم بازیکن ۲ می‌شود.");
+    showOverlay("Start Match", "Open two browsers to play online. Player 1 joins first, Player 2 joins second.");
     updateCamera(0.016);
     updateUi();
     if (broadcast) send({ type: "restart" });
@@ -245,20 +252,25 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   function createEnemies() {
     const slots = [[1, 0.2, 1], [2, -0.2, 2.4], [3, 0.1, 4], [4, -0.3, 1.5], [5, 0.2, 4.8], [6, -0.1, 2.8]];
     for (const [platformIndex, lat, lon] of slots) {
-      const mesh = makeEnemyMesh();
-      root.add(mesh);
-      enemies.push({
-        mesh,
-        platform: platforms[platformIndex],
-        lat,
-        lon,
-        health: 60,
-        cooldown: 0.8 + Math.random(),
-        pos: new THREE.Vector3(),
-        up: new THREE.Vector3(0, 1, 0),
-        dead: false,
-      });
+      spawnEnemy(platformIndex, lat, lon);
     }
+  }
+
+  function spawnEnemy(platformIndex = 1 + Math.floor(Math.random() * Math.max(1, platforms.length - 1)), lat = Math.random() * 0.8 - 0.4, lon = Math.random() * Math.PI * 2) {
+    const mesh = makeEnemyMesh();
+    root.add(mesh);
+    enemies.push({
+      mesh,
+      platform: platforms[platformIndex % platforms.length],
+      lat,
+      lon,
+      health: 60,
+      cooldown: 0.8 + Math.random(),
+      pos: new THREE.Vector3(),
+      up: new THREE.Vector3(0, 1, 0),
+      dead: false,
+    });
+    spawnEffect(platforms[platformIndex % platforms.length].center, 0xff3030, 0.28);
   }
 
   function makeEnemyMesh() {
@@ -286,6 +298,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     player.grounded = true;
     player.cooldown = 0;
     player.jumpGrace = 0;
+    player.respawnTimer = 0;
     syncMesh(player);
   }
 
@@ -295,8 +308,9 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       resetGame(true);
     }
     state.started = true;
-    state.message = "رقابت شروع شد";
+    state.message = "Match live";
     hideOverlay();
+    playSweep(360, 780, 0.2, 0.08, "triangle");
     updateUi();
   }
 
@@ -324,9 +338,13 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
     if (state.started && !state.ended) {
       const local = localPlayer();
+      state.timeLeft = Math.max(0, state.timeLeft - dt);
+      if (state.timeLeft <= 0) finishByScore("Time is up.");
+      updateRespawn(local, dt);
       updatePlayer(local, dt);
       updateRemotePlayer(remotePlayer(), dt);
       updateEnemies(dt);
+      updateEnemySpawns(dt);
       updateBullets(dt);
       sendState();
     }
@@ -393,6 +411,17 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (player.pos.length() > 230 || player.pos.y < -90) damagePlayer(player, 100, null);
   }
 
+  function updateRespawn(player, dt) {
+    if (!player || player.alive || player.respawnTimer <= 0) return;
+    player.respawnTimer -= dt;
+    if (player.respawnTimer <= 0) {
+      const platform = platforms[Math.floor(Math.random() * platforms.length)];
+      placePlayer(player, platform, spherical(Math.random() * 0.8 - 0.4, Math.random() * Math.PI * 2));
+      playSweep(210, 640, 0.18, 0.06, "triangle");
+      state.message = "Respawned";
+    }
+  }
+
   function updateRemotePlayer(player, dt) {
     if (!player || !player.target) return;
     player.pos.lerp(player.target.pos, 1 - Math.exp(-16 * dt));
@@ -446,6 +475,16 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     }
   }
 
+  function updateEnemySpawns(dt) {
+    if (net.role !== "p1") return;
+    state.nextEnemySpawn = Math.max(0, state.nextEnemySpawn - dt);
+    const aliveCount = enemies.filter((enemy) => !enemy.dead).length;
+    if (aliveCount >= 5 || state.nextEnemySpawn > 0) return;
+    spawnEnemy();
+    state.nextEnemySpawn = 1.2 + Math.random() * 1.6;
+    send({ type: "enemy-spawn", index: enemies.length - 1, platform: platforms.indexOf(enemies[enemies.length - 1].platform), lat: enemies[enemies.length - 1].lat, lon: enemies[enemies.length - 1].lon });
+  }
+
   function updateBullets(dt) {
     for (let i = bullets.length - 1; i >= 0; i -= 1) {
       const bullet = bullets[i];
@@ -467,7 +506,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       }
       for (let e = 0; e < enemies.length; e += 1) {
         const enemy = enemies[e];
-        if (!enemy.dead && bullet.pos.distanceTo(enemy.pos) < 1.25) {
+        if (bullet.owner === net.role && !enemy.dead && bullet.pos.distanceTo(enemy.pos) < 1.25) {
           enemy.health -= 34;
           spawnEffect(enemy.pos, bullet.color, 0.36);
           if (enemy.health <= 0) {
@@ -475,8 +514,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
             root.remove(enemy.mesh);
             scores[bullet.owner] += 1;
             playSweep(520, 160, 0.26, 0.07, "square");
+            pulseDevice(18);
             send({ type: "enemy-down", index: e, scorer: bullet.owner });
-            if (enemies.every((item) => item.dead)) finishByScore("همه دشمن‌ها حذف شدند.");
           }
           removeBullet(i);
           break;
@@ -521,20 +560,26 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     player.invuln = 0.35;
     spawnEffect(player.pos, player.color, 0.42);
     playSweep(170, 80, 0.2, 0.065, "sawtooth");
-    if (player.id === net.role) send({ type: "damage", target: player.id, health: player.health, source });
+    if (source === "p1" || source === "p2") {
+      scores[source] += 1;
+      state.message = `${source === "p1" ? "Player 1" : "Player 2"} scored a hit`;
+      playSweep(620, 920, 0.12, 0.045, "triangle");
+      pulseDevice(14);
+    }
+    if (player.id === net.role) send({ type: "damage", target: player.id, health: player.health, source, scores });
     if (player.health <= 0) {
       player.alive = false;
-      if (source === "p1" || source === "p2") scores[source] += 3;
-      finishByScore(`${player.label} حذف شد.`);
+      player.respawnTimer = 2.4;
+      state.message = `${player.label} is respawning`;
     }
   }
 
   function finishByScore(reason) {
     state.ended = true;
     input.fire = false;
-    const winner = scores.p1 === scores.p2 ? "مساوی" : scores.p1 > scores.p2 ? "بازیکن ۱" : "بازیکن ۲";
-    state.message = `${reason} نتیجه: ${winner}`;
-    showOverlay("شروع دوباره", state.message);
+    const winner = scores.p1 === scores.p2 ? "Draw" : scores.p1 > scores.p2 ? "Player 1 wins" : "Player 2 wins";
+    state.message = `${reason} ${winner}. Final score ${scores.p1}-${scores.p2}`;
+    showOverlay("Play Again", state.message);
     document.body.classList.add("game-over");
   }
 
@@ -612,12 +657,14 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       const roots = [45, 41, 43, 38];
       const root = roots[Math.floor(audio.step / 8) % roots.length];
       const pulse = audio.step % 8;
-      if (pulse % 2 === 0) playTone(root - 12, audio.nextBeat, 0.28, 0.045, "triangle", audio.music);
+      const hurry = state.timeLeft < 30 ? 1.35 : 1;
+      if (pulse % 2 === 0) playTone(root - 12, audio.nextBeat, 0.22 / hurry, 0.055, "triangle", audio.music);
+      if (pulse === 2 || pulse === 6) playTone(root - 5, audio.nextBeat + 0.08, 0.12, 0.025, "square", audio.music);
       if (pulse === 0 || pulse === 4) {
-        for (const offset of [0, 3, 7]) playTone(root + offset, audio.nextBeat, 0.65, 0.02, "triangle", audio.music);
+        for (const offset of [0, 3, 7]) playTone(root + offset, audio.nextBeat, 0.48 / hurry, 0.024, "triangle", audio.music);
       }
-      playTone(root + [12, 15, 19, 15, 10, 15, 17, 22][pulse], audio.nextBeat + 0.04, 0.16, 0.018, pulse % 3 ? "triangle" : "sawtooth", audio.music);
-      audio.nextBeat += 0.42;
+      playTone(root + [12, 15, 19, 15, 10, 15, 17, 22][pulse], audio.nextBeat + 0.04, 0.13 / hurry, 0.022, pulse % 3 ? "triangle" : "sawtooth", audio.music);
+      audio.nextBeat += (state.timeLeft < 30 ? 0.29 : 0.36);
       audio.step += 1;
     }
   }
@@ -653,6 +700,10 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     osc.stop(time + duration + 0.04);
   }
 
+  function pulseDevice(ms) {
+    if (navigator.vibrate) navigator.vibrate(ms);
+  }
+
   function removeBullet(index) {
     root.remove(bullets[index].mesh);
     bullets.splice(index, 1);
@@ -663,13 +714,13 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     net.ws = ws;
     ws.addEventListener("open", () => {
       net.connected = true;
-      state.message = "به سرور آنلاین وصل شدی";
+      state.message = "Online server connected";
       updateUi();
     });
     ws.addEventListener("close", () => {
       net.connected = false;
       net.peer = false;
-      state.message = "اتصال قطع شد؛ تلاش مجدد";
+      state.message = "Connection lost; retrying";
       setTimeout(connectOnline, 1800);
     });
     ws.addEventListener("message", (event) => {
@@ -700,6 +751,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       const player = players[msg.from];
       if (player) player.target = unpackState(msg.state);
       if (msg.state?.scores) Object.assign(scores, msg.state.scores);
+      if (msg.state?.timeLeft !== undefined && msg.from === "p1") state.timeLeft = Number(msg.state.timeLeft);
     } else if (msg.type === "shot" && msg.from !== net.role) {
       shoot(unpack(msg.origin), unpack(msg.direction).normalize(), 72, msg.from, msg.color || 0xffffff);
     } else if (msg.type === "damage" && msg.target !== net.role) {
@@ -708,6 +760,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
         player.health = msg.health;
         player.alive = msg.health > 0;
       }
+      if (msg.scores) Object.assign(scores, msg.scores);
     } else if (msg.type === "enemy-down") {
       const enemy = enemies[msg.index];
       if (enemy && !enemy.dead) {
@@ -715,6 +768,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
         root.remove(enemy.mesh);
         scores[msg.scorer] += 1;
       }
+    } else if (msg.type === "enemy-spawn" && net.role !== "p1") {
+      if (!enemies[msg.index]) spawnEnemy(msg.platform, msg.lat, msg.lon);
     } else if (msg.type === "restart") {
       resetGame(false);
     }
@@ -734,6 +789,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
         health: player.health,
         alive: player.alive,
         scores,
+        timeLeft: state.timeLeft,
       },
     });
   }
@@ -751,15 +807,21 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     const local = localPlayer();
     if (p1HealthValue) p1HealthValue.textContent = Math.ceil(players.p1.health);
     if (p2HealthValue) p2HealthValue.textContent = Math.ceil(players.p2.health);
-    if (p1ScoreValue) p1ScoreValue.textContent = p1ScoreValue.id === "s1" ? `${scores.p1} امتیاز` : scores.p1;
-    if (p2ScoreValue) p2ScoreValue.textContent = p2ScoreValue.id === "s2" ? `${scores.p2} امتیاز` : scores.p2;
+    if (p1ScoreValue) p1ScoreValue.textContent = p1ScoreValue.id === "s1" ? `${scores.p1} points` : scores.p1;
+    if (p2ScoreValue) p2ScoreValue.textContent = p2ScoreValue.id === "s2" ? `${scores.p2} points` : scores.p2;
     if (enemiesValue) enemiesValue.textContent = enemies.filter((enemy) => !enemy.dead).length;
-    const roleText = net.role === "spectator" ? "تماشاگر" : net.role === "p2" ? "بازیکن ۲" : "بازیکن ۱";
-    const peer = net.peer ? "رقیب وصل است" : "منتظر رقیب";
+    if (timerValue) timerValue.textContent = formatTime(state.timeLeft);
+    const roleText = net.role === "spectator" ? "Spectator" : net.role === "p2" ? "Player 2" : "Player 1";
+    const peer = net.peer ? "Rival online" : "Waiting for rival";
     if (statusValue) statusValue.textContent = `${state.message} | ${roleText} | ${peer}`;
     const healthRatio = local ? local.health / 100 : 0;
     if (topAlertFill) topAlertFill.style.transform = `scaleX(${THREE.MathUtils.clamp(healthRatio, 0, 1)})`;
-    if (topAlertText) topAlertText.textContent = local ? `${local.label} ${Math.ceil(local.health)}` : "تماشاگر";
+    if (topAlertText) topAlertText.textContent = local ? `${local.label} ${Math.ceil(local.health)}` : "Spectator";
+  }
+
+  function formatTime(seconds) {
+    const value = Math.max(0, Math.ceil(seconds));
+    return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, "0")}`;
   }
 
   function showOverlay(title, note) {
@@ -817,10 +879,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(rx, ry);
-    loader.load(url, (loaded) => {
-      texture.image = loaded.image;
-      texture.needsUpdate = true;
-    });
+    if (!location.hostname.includes("onrender.com")) {
+      loader.load(url, (loaded) => {
+        texture.image = loaded.image;
+        texture.needsUpdate = true;
+      }, undefined, () => {});
+    }
     return texture;
   }
 
@@ -919,6 +983,25 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   });
   startButton?.addEventListener("click", startGame);
 
+  canvas.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" || event.clientX < innerWidth * 0.38) return;
+    lookTouchId = event.pointerId;
+    lookTouchX = event.clientX;
+    startGame();
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    const player = localPlayer();
+    if (event.pointerId !== lookTouchId || !player || !state.started) return;
+    const dx = event.clientX - lookTouchX;
+    lookTouchX = event.clientX;
+    cameraState.forward.applyQuaternion(quat.setFromAxisAngle(player.up, -dx * 0.0052));
+  });
+
+  canvas.addEventListener("pointerup", (event) => {
+    if (event.pointerId === lookTouchId) lookTouchId = null;
+  });
+
   if (touchStick) {
     touchStick.addEventListener("pointermove", (event) => {
       const rect = touchStick.getBoundingClientRect();
@@ -964,6 +1047,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     mode: state.ended ? "ended" : state.started ? "playing" : "menu",
     role: net.role,
     message: state.message,
+    timeLeft: +state.timeLeft.toFixed(1),
+    scores: { ...scores },
     player: localPlayer() ? {
       x: +localPlayer().pos.x.toFixed(2),
       y: +localPlayer().pos.y.toFixed(2),

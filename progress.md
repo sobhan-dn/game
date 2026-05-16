@@ -42,3 +42,20 @@ Original prompt: یک بازی سه بعدی با سرور دائمی و دو ن
 - Updated the HUD and overlay for two player health bars, scores, online role status, and duel controls.
 - Strengthened player/enemy visuals with distinct player tints, brighter projectiles, score feedback, and retained animated FBX character support.
 - Verified locally with two simultaneous Playwright browser pages: both received separate online roles, started the game, moved independently, and produced no console/page errors.
+
+## 2026-05-16 English Timed Duel Update
+
+- Converted the game UI and runtime messages to English for a store-ready build.
+- Added a 120-second round timer. The match ends only when time expires, then highest score wins.
+- Updated scoring: destroying a red unit gives 1 point, and every successful online rival hit gives 1 point.
+- Player death no longer ends the match; the player respawns after a short delay so the two-minute round keeps flowing.
+- Added random red-unit respawns when the active red count drops below five, with Player 1 acting as the online spawn authority.
+- Tuned the music loop to speed up in the final 30 seconds and added small haptic pulses on mobile for hits/kills.
+- Optimized the iPhone viewport: English safe-area metadata, compact HUD/menu styles, larger touch controls, right-side touch look, and no external web font dependency.
+- Verified desktop gameplay with the develop-web-game Playwright client and visually inspected `output/web-game/shot-0.png`.
+- Verified iPhone menu and gameplay screenshots at `output/web-game/iphone-menu.png` and `output/web-game/iphone-game.png`; start button is visible and the game starts with no JS console errors.
+- Verified timer expiry via `window.advanceTime(121000)`, ending with `Time is up. Draw. Final score 0-0`.
+
+## TODO
+
+- After GitHub connector deploy, verify the Render URL serves the updated English timed build and no longer logs missing texture 404s on Render.
