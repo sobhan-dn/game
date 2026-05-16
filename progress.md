@@ -59,3 +59,4 @@ Original prompt: یک بازی سه بعدی با سرور دائمی و دو ن
 ## TODO
 
 - After GitHub connector deploy, verify the Render URL serves the updated English timed build and no longer logs missing texture 404s on Render.
+- Updated Render/GitHub deployment files through the GitHub connector: English compact `index.html`, iPhone compact `styles.css`, and `server.js` runtime patches for the deployed compact game bundle.
