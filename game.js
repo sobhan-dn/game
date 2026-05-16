@@ -1003,7 +1003,13 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   });
 
   if (touchStick) {
-    touchStick.addEventListener("pointermove", (event) => {
+    const resetTouchStick = () => {
+      input.f = input.b = input.l = input.r = false;
+      if (touchStickKnob) touchStickKnob.style.transform = "translate(-50%, -50%)";
+      touchStick.classList.remove("active");
+    };
+    const updateTouchStick = (event) => {
+      event.preventDefault();
       const rect = touchStick.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
@@ -1018,12 +1024,18 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       input.b = ny > 0.2;
       input.l = nx < -0.2;
       input.r = nx > 0.2;
-      touchStickKnob.style.transform = `translate(calc(-50% + ${nx * max}px), calc(-50% + ${ny * max}px))`;
+      if (touchStickKnob) touchStickKnob.style.transform = `translate(calc(-50% + ${nx * max}px), calc(-50% + ${ny * max}px))`;
+    };
+    touchStick.addEventListener("pointerdown", (event) => {
+      touchStick.setPointerCapture?.(event.pointerId);
+      touchStick.classList.add("active");
+      startGame();
+      updateTouchStick(event);
     });
-    touchStick.addEventListener("pointerup", () => {
-      input.f = input.b = input.l = input.r = false;
-      touchStickKnob.style.transform = "translate(-50%, -50%)";
-    });
+    touchStick.addEventListener("pointermove", updateTouchStick);
+    touchStick.addEventListener("pointerup", resetTouchStick);
+    touchStick.addEventListener("pointercancel", resetTouchStick);
+    touchStick.addEventListener("lostpointercapture", resetTouchStick);
   }
   touchJump?.addEventListener("pointerdown", () => {
     input.jump = true;
