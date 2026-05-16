@@ -115,8 +115,10 @@ wss.on("connection", (socket) => {
     }
 
     const allowedTypes = new Set([
+      "state",
       "player-state",
       "shot",
+      "damage",
       "player-damage",
       "enemy-down",
       "restart",

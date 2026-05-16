@@ -38,9 +38,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const quat = new THREE.Quaternion();
 
   const input = { f: false, b: false, l: false, r: false, jump: false, fire: false };
+  const cameraState = { forward: new THREE.Vector3(1, 0, 0) };
   const net = { ws: null, role: "p1", connected: false, peer: false, last: 0 };
   const state = { started: false, ended: false, message: "برای شروع کلیک کنید" };
   const scores = { p1: 0, p2: 0 };
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  const audio = { context: null, master: null, music: null, sfx: null, nextBeat: 0, step: 0 };
 
   const players = {
     p1: makePlayer("p1", "بازیکن ۱", 0x65f7df, 0x5ef5ff),
@@ -180,6 +183,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     createPlatforms();
     placePlayer(players.p1, platforms[0], new THREE.Vector3(0, 1, 0));
     placePlayer(players.p2, platforms[0], new THREE.Vector3(0.45, 0.88, 0.12).normalize());
+    cameraState.forward.copy(players[net.role] ? players[net.role].forward : players.p1.forward);
     createEnemies();
     showOverlay("شروع بازی", "دو مرورگر باز کن؛ نفر اول بازیکن ۱ و نفر دوم بازیکن ۲ می‌شود.");
     updateCamera(0.016);
@@ -283,6 +287,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function startGame() {
+    ensureAudio();
     if (state.ended) {
       resetGame(true);
     }
@@ -323,6 +328,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       sendState();
     }
     updateEffects(dt);
+    updateMusic();
     updateCamera(dt);
     updateUi();
   }
@@ -336,8 +342,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     const platform = nearestPlatform(player.pos);
     const desiredUp = tmp.copy(player.pos).sub(platform.center).normalize();
     player.up.lerp(desiredUp, 1 - Math.exp(-12 * dt)).normalize();
-    const forward = tmp2.copy(camera.getWorldDirection(new THREE.Vector3())).projectOnPlane(player.up);
-    if (forward.lengthSq() < 0.001) forward.copy(player.forward);
+    const forward = tmp2.copy(cameraState.forward).projectOnPlane(player.up);
+    if (forward.lengthSq() < 0.001) forward.copy(player.forward).projectOnPlane(player.up);
     forward.normalize();
     const right = new THREE.Vector3().crossVectors(forward, player.up).normalize();
     const move = new THREE.Vector3();
@@ -358,6 +364,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       player.vel.addScaledVector(player.up, 18);
       player.vel.addScaledVector(move.lengthSq() ? move : forward, 11);
       player.grounded = false;
+      playSweep(240, 520, 0.16, 0.055, "triangle");
       spawnEffect(player.pos, player.color, 0.35);
     }
     input.jump = false;
@@ -366,8 +373,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     landPlayer(player);
 
     if (input.fire && player.cooldown <= 0) fire(player);
-    const face = move.lengthSq() > 0.01 ? move : forward;
-    player.forward.copy(face);
+    player.forward.lerp(forward, 1 - Math.exp(-16 * dt)).normalize();
     syncMesh(player);
     if (player.pos.length() > 230 || player.pos.y < -90) damagePlayer(player, 100, null);
   }
@@ -435,6 +441,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
         const player = localPlayer();
         if (player && player.alive && bullet.pos.distanceTo(player.pos) < 1.15) {
           damagePlayer(player, 15, "enemy");
+          playSweep(150, 70, 0.18, 0.06, "sawtooth");
           removeBullet(i);
         }
         continue;
@@ -448,6 +455,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
             enemy.dead = true;
             root.remove(enemy.mesh);
             scores[bullet.owner] += 1;
+            playSweep(520, 160, 0.26, 0.07, "square");
             send({ type: "enemy-down", index: e, scorer: bullet.owner });
             if (enemies.every((item) => item.dead)) finishByScore("همه دشمن‌ها حذف شدند.");
           }
@@ -468,6 +476,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     const muzzle = player.pos.clone().addScaledVector(player.up, 0.72).addScaledVector(player.forward, 1.0);
     shoot(muzzle, direction, 72, player.id, player.bulletColor);
     player.cooldown = 0.15;
+    playSweep(player.id === "p2" ? 380 : 460, 170, 0.08, 0.045, "square");
     send({ type: "shot", origin: pack(muzzle), direction: pack(direction), color: player.bulletColor });
   }
 
@@ -487,6 +496,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     player.health = Math.max(0, player.health - amount);
     player.invuln = 0.35;
     spawnEffect(player.pos, player.color, 0.42);
+    playSweep(170, 80, 0.2, 0.065, "sawtooth");
     if (player.id === net.role) send({ type: "damage", target: player.id, health: player.health, source });
     if (player.health <= 0) {
       player.alive = false;
@@ -507,7 +517,10 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   function updateCamera(dt) {
     const player = localPlayer() || players.p1;
     const up = player.up.clone().normalize();
-    const forward = player.forward.clone().projectOnPlane(up).normalize();
+    const forward = cameraState.forward.clone().projectOnPlane(up);
+    if (forward.lengthSq() < 0.001) forward.copy(player.forward).projectOnPlane(up);
+    forward.normalize();
+    cameraState.forward.copy(forward);
     const target = player.pos.clone().addScaledVector(up, 2.3).addScaledVector(forward, 1.5);
     const desired = target.clone().addScaledVector(forward, -13).addScaledVector(up, 4);
     camera.position.lerp(desired, 1 - Math.exp(-8 * dt));
@@ -548,6 +561,74 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     }
   }
 
+  function ensureAudio() {
+    if (!AudioContextClass || audio.context) return;
+    const context = new AudioContextClass();
+    const master = context.createGain();
+    const music = context.createGain();
+    const sfx = context.createGain();
+    master.gain.value = 0.68;
+    music.gain.value = 0.16;
+    sfx.gain.value = 0.36;
+    music.connect(master);
+    sfx.connect(master);
+    master.connect(context.destination);
+    audio.context = context;
+    audio.master = master;
+    audio.music = music;
+    audio.sfx = sfx;
+    audio.nextBeat = context.currentTime + 0.08;
+  }
+
+  function updateMusic() {
+    if (!audio.context || !state.started || state.ended) return;
+    if (audio.context.state === "suspended") audio.context.resume();
+    const horizon = audio.context.currentTime + 0.7;
+    while (audio.nextBeat < horizon) {
+      const roots = [45, 41, 43, 38];
+      const root = roots[Math.floor(audio.step / 8) % roots.length];
+      const pulse = audio.step % 8;
+      if (pulse % 2 === 0) playTone(root - 12, audio.nextBeat, 0.28, 0.045, "triangle", audio.music);
+      if (pulse === 0 || pulse === 4) {
+        for (const offset of [0, 3, 7]) playTone(root + offset, audio.nextBeat, 0.65, 0.02, "triangle", audio.music);
+      }
+      playTone(root + [12, 15, 19, 15, 10, 15, 17, 22][pulse], audio.nextBeat + 0.04, 0.16, 0.018, pulse % 3 ? "triangle" : "sawtooth", audio.music);
+      audio.nextBeat += 0.42;
+      audio.step += 1;
+    }
+  }
+
+  function playSweep(start, end, duration, volume, type) {
+    if (!audio.context) return;
+    const now = audio.context.currentTime;
+    const osc = audio.context.createOscillator();
+    const gain = audio.context.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(start, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(end, 30), now + duration);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(gain);
+    gain.connect(audio.sfx);
+    osc.start(now);
+    osc.stop(now + duration + 0.03);
+  }
+
+  function playTone(midi, time, duration, volume, type, destination) {
+    const osc = audio.context.createOscillator();
+    const gain = audio.context.createGain();
+    osc.type = type;
+    osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(volume, time + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(gain);
+    gain.connect(destination);
+    osc.start(time);
+    osc.stop(time + duration + 0.04);
+  }
+
   function removeBullet(index) {
     root.remove(bullets[index].mesh);
     bullets.splice(index, 1);
@@ -581,6 +662,9 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   function onMessage(msg) {
     if (msg.type === "welcome") {
       net.role = msg.role === "p2" || msg.role === "spectator" ? msg.role : "p1";
+      if (players[net.role]) {
+        cameraState.forward.copy(players[net.role].forward);
+      }
       if (net.role === "p2") {
         players.p1.remote = true;
         players.p2.remote = false;
@@ -795,7 +879,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   document.addEventListener("mousemove", (event) => {
     const player = localPlayer();
     if (!player || !state.started) return;
-    player.forward.applyQuaternion(quat.setFromAxisAngle(player.up, -event.movementX * 0.0026));
+    cameraState.forward.applyQuaternion(quat.setFromAxisAngle(player.up, -event.movementX * 0.0026));
   });
 
   canvas.addEventListener("mousedown", (event) => {
