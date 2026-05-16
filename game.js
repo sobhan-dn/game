@@ -710,7 +710,10 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function connectOnline() {
-    const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`);
+    const wsUrl = location.protocol === "file:"
+      ? "wss://maze-heli-command.onrender.com"
+      : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+    const ws = new WebSocket(wsUrl);
     net.ws = ws;
     ws.addEventListener("open", () => {
       net.connected = true;
@@ -737,12 +740,10 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   function onMessage(msg) {
     if (msg.type === "welcome") {
       net.role = msg.role === "p2" || msg.role === "spectator" ? msg.role : "p1";
+      players.p1.remote = net.role !== "p1";
+      players.p2.remote = net.role !== "p2";
       if (players[net.role]) {
         cameraState.forward.copy(players[net.role].forward);
-      }
-      if (net.role === "p2") {
-        players.p1.remote = true;
-        players.p2.remote = false;
       }
       updatePresence(msg.players || []);
     } else if (msg.type === "presence") {
