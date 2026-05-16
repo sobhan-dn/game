@@ -33,3 +33,12 @@ Original prompt: یک بازی سه بعدی با سرور دائمی و دو ن
 ## TODO
 
 - Push the replacement to `sobhan-dn/game` on `master` and confirm Render auto-deploy goes live.
+
+## 2026-05-16 Online Duel Upgrade
+
+- Kept the provided texture atlas and panorama assets in `assets/textures`; their hashes match the user-provided images.
+- Upgraded `Void Spheres` into an online two-player competitive duel: first browser becomes player 1, second browser becomes player 2, additional browsers become spectators.
+- Added a WebSocket relay to the Node server for player state, shots, damage, enemy removals, scoring, and restarts.
+- Updated the HUD and overlay for two player health bars, scores, online role status, and duel controls.
+- Strengthened player/enemy visuals with distinct player tints, brighter projectiles, score feedback, and retained animated FBX character support.
+- Verified locally with two simultaneous Playwright browser pages: both received separate online roles, started the game, moved independently, and produced no console/page errors.

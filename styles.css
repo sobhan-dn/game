@@ -135,6 +135,33 @@ body {
   letter-spacing: 0.02em;
 }
 
+.player-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.player-panel::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 4px;
+  background: var(--accent);
+  box-shadow: 0 0 18px var(--accent);
+}
+
+.p2-panel::before {
+  background: #ffbd57;
+  box-shadow: 0 0 18px rgba(255, 189, 87, 0.72);
+}
+
+.player-panel small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
 .status-panel {
   min-width: 220px;
 }
@@ -279,9 +306,9 @@ body {
 }
 
 .card {
-  width: min(580px, calc(100vw - 28px));
-  padding: 32px;
-  border-radius: 28px;
+  width: min(620px, calc(100vw - 28px));
+  padding: 30px;
+  border-radius: 8px;
   border: 1px solid rgba(111, 247, 221, 0.22);
   background:
     linear-gradient(145deg, rgba(11, 20, 37, 0.95), rgba(5, 11, 20, 0.92));
@@ -316,6 +343,7 @@ h1 {
   padding: 0;
   list-style: none;
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -324,7 +352,7 @@ h1 {
   align-items: center;
   gap: 12px;
   padding: 11px 14px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text);
@@ -346,7 +374,7 @@ kbd {
 button {
   width: 100%;
   border: 0;
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 15px 18px;
   background:
     linear-gradient(135deg, var(--accent), var(--accent-strong));
@@ -434,6 +462,10 @@ body.target-locked #crosshair span:last-child::after {
   .controls li {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
   }
 }
 

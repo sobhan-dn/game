@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Void Spheres</title>
+    <title>Void Spheres Duel</title>
     <link rel="stylesheet" href="./styles.css" />
     <script type="importmap">
       {
@@ -26,12 +26,18 @@
       </div>
 
       <div id="hud">
-        <div class="panel">
-          <span class="label">سلامتی</span>
-          <strong id="health">100</strong>
+        <div class="panel player-panel p1-panel">
+          <span class="label">بازیکن ۱</span>
+          <strong id="p1-health">100</strong>
+          <small><span id="p1-score">0</span> امتیاز</small>
+        </div>
+        <div class="panel player-panel p2-panel">
+          <span class="label">بازیکن ۲</span>
+          <strong id="p2-health">100</strong>
+          <small><span id="p2-score">0</span> امتیاز</small>
         </div>
         <div class="panel">
-          <span class="label">دشمن باقی‌مانده</span>
+          <span class="label">دشمن</span>
           <strong id="enemies">0</strong>
         </div>
         <div class="panel status-panel">
@@ -57,18 +63,19 @@
 
       <div id="overlay" class="visible">
         <div class="card">
-          <p class="eyebrow">Void Spheres</p>
-          <h1>پرش بین کره‌های شناور</h1>
+          <p class="eyebrow">Void Spheres Duel</p>
+          <h1>دوئل روی کره‌های شناور</h1>
           <p class="lead">
-            یک نمونه‌ی سوم‌شخص ۳بعدی با کره‌های معلقِ متحرک و چرخان، پرش بین آن‌ها،
-            و نبرد تیراندازی با دشمن‌هایی که از روی سکوهای خودشان شما را هدف می‌گیرند.
+            دو بازیکن روی کره‌های معلق با بافت‌های یخی، گدازه‌ای، جنگلی و طلایی رقابت می‌کنند؛
+            دشمن‌ها هم وسط میدان فشار می‌آورند و هر حذف امتیاز می‌سازد.
           </p>
 
           <ul class="controls">
-            <li><kbd>W A S D</kbd> حرکت روی سطح کره</li>
-            <li><kbd>Space</kbd> پرش و عبور به کره‌ی بعدی</li>
+            <li><kbd>Online</kbd> نفر اول بازیکن ۱ و نفر دوم بازیکن ۲ می‌شود</li>
+            <li><kbd>W A S D</kbd> حرکت بازیکن خودت</li>
+            <li><kbd>Space / Shift</kbd> پرش</li>
+            <li><kbd>Click / Enter</kbd> شلیک</li>
             <li><kbd>Mouse</kbd> چرخاندن دوربین</li>
-            <li><kbd>Click</kbd> شلیک</li>
             <li><kbd>Touch</kbd> روی موبایل: سمت چپ حرکت، سمت راست چرخش، دکمه‌ها پرش/شلیک</li>
             <li><kbd>Esc</kbd> آزاد کردن ماوس</li>
           </ul>

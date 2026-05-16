@@ -1,6 +1,6 @@
-# Void Spheres
+# Void Spheres Duel
 
-Single-player Three.js action platformer with floating spheres, jumping, shooting, enemies, and mobile touch controls.
+Online two-player Three.js action platformer with textured floating spheres, shooting, enemies, scoring, and mobile touch controls. The Node server serves the game and relays realtime WebSocket messages for player roles, movement, shots, damage, and restart events.
 
 ## Run locally
 
