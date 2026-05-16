@@ -41,7 +41,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   const input = { f: false, b: false, l: false, r: false, jump: false, fire: false };
   const cameraState = { forward: new THREE.Vector3(1, 0, 0) };
-  const net = { ws: null, role: "p1", connected: false, peer: false, last: 0 };
+  const net = { ws: null, role: "pending", connected: false, peer: false, last: 0 };
   const roundSeconds = 120;
   const state = { started: false, ended: false, message: "Tap Start", timeLeft: roundSeconds, nextEnemySpawn: 0 };
   const scores = { p1: 0, p2: 0 };
@@ -777,7 +777,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function sendState() {
-    if (!net.connected || !net.ws || net.ws.readyState !== WebSocket.OPEN || net.role === "spectator") return;
+    if (!net.connected || !net.ws || net.ws.readyState !== WebSocket.OPEN || net.role === "pending" || net.role === "spectator") return;
     if (clock.elapsedTime - net.last < 1 / 15) return;
     const player = localPlayer();
     net.last = clock.elapsedTime;
@@ -812,7 +812,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (p2ScoreValue) p2ScoreValue.textContent = p2ScoreValue.id === "s2" ? `${scores.p2} points` : scores.p2;
     if (enemiesValue) enemiesValue.textContent = enemies.filter((enemy) => !enemy.dead).length;
     if (timerValue) timerValue.textContent = formatTime(state.timeLeft);
-    const roleText = net.role === "spectator" ? "Spectator" : net.role === "p2" ? "Player 2" : "Player 1";
+    const roleText = net.role === "pending" ? "Connecting" : net.role === "spectator" ? "Spectator" : net.role === "p2" ? "Player 2" : "Player 1";
     const peer = net.peer ? "Rival online" : "Waiting for rival";
     if (statusValue) statusValue.textContent = `${state.message} | ${roleText} | ${peer}`;
     const healthRatio = local ? local.health / 100 : 0;
@@ -838,7 +838,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function localPlayer() {
-    if (net.role === "spectator") return null;
+    if (net.role === "pending" || net.role === "spectator") return null;
     return players[net.role] || players.p1;
   }
 

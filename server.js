@@ -52,6 +52,10 @@ const server = http.createServer(async (req, res) => {
 function patchGameScript(source) {
   return source
     .replace(
+      'net={ws:null,role:"p1",connected:false,peer:false,last:0}',
+      'net={ws:null,role:"pending",connected:false,peer:false,last:0}'
+    )
+    .replace(
       /state=\{started:false,ended:false,msg:"[^"]+"\}/,
       'state={started:false,ended:false,msg:"Tap Start",timeLeft:120,nextEnemySpawn:0}'
     )
@@ -70,6 +74,10 @@ function patchGameScript(source) {
     .replace(
       /scores\.p2=0;state\.started=false;state\.ended=false;state\.msg="[^"]+";/,
       'scores.p2=0;state.started=false;state.ended=false;state.msg="Tap Start";state.timeLeft=120;state.nextEnemySpawn=0;'
+    )
+    .replace(
+      /scores\.p1=scores\.p2=0; state\.started=false; state\.ended=false; state\.msg="[^"]+";/,
+      'scores.p1=scores.p2=0; state.started=false; state.ended=false; state.msg="Tap Start"; state.timeLeft=120; state.nextEnemySpawn=0;'
     )
     .replace(
       /ws\.onopen=\(\)=>\{net\.connected=true;state\.msg="[^"]+";updateUi\(\);\};/,
@@ -136,6 +144,10 @@ function patchGameScript(source) {
       'if(m.state.scores)Object.assign(scores,m.state.scores);if(m.state.timeLeft!==undefined&&m.from==="p1")state.timeLeft=Number(m.state.timeLeft);'
     )
     .replace(
+      'net.role=m.role==="p2"||m.role==="spectator"?m.role:"p1";if(players[net.role])',
+      'net.role=m.role==="p2"||m.role==="spectator"?m.role:"p1";players.p1.remote=net.role!=="p1";players.p2.remote=net.role!=="p2";if(players[net.role])'
+    )
+    .replace(
       'if(p){p.health=m.health;p.alive=m.health>0;}}else if(m.type==="enemy-down")',
       'if(p){p.health=m.health;p.alive=m.health>0;}if(m.scores)Object.assign(scores,m.scores);}else if(m.type==="enemy-down")'
     )
@@ -148,12 +160,24 @@ function patchGameScript(source) {
       'alive:p.alive,scores,timeLeft:state.timeLeft}});'
     )
     .replace(
+      'if(!net.connected||net.ws.readyState!==WebSocket.OPEN||net.role==="spectator")return;',
+      'if(!net.connected||net.ws.readyState!==WebSocket.OPEN||net.role==="pending"||net.role==="spectator")return;'
+    )
+    .replace(
       'if(s1El)s1El.textContent=`${scores.p1} \\u0627\\u0645\\u062a\\u06cc\\u0627\\u0632`;if(s2El)s2El.textContent=`${scores.p2} \\u0627\\u0645\\u062a\\u06cc\\u0627\\u0632`;',
       'if(s1El)s1El.textContent=`${scores.p1} points`;if(s2El)s2El.textContent=`${scores.p2} points`;const timerEl=document.getElementById("timer");if(timerEl){const v=Math.max(0,Math.ceil(state.timeLeft||120));timerEl.textContent=`${Math.floor(v/60)}:${String(v%60).padStart(2,"0")}`;}'
     )
     .replace(
       'const role=net.role==="spectator"?"\\u062a\\u0645\\u0627\\u0634\\u0627\\u06af\\u0631":net.role==="p2"?"\\u0628\\u0627\\u0632\\u06cc\\u06a9\\u0646 \\u06f2":"\\u0628\\u0627\\u0632\\u06cc\\u06a9\\u0646 \\u06f1";if(statusEl)statusEl.textContent=`${state.msg} | ${role} | ${net.peer?"\\u0631\\u0642\\u06cc\\u0628 \\u0648\\u0635\\u0644 \\u0627\\u0633\\u062a":"\\u0645\\u0646\\u062a\\u0638\\u0631 \\u0631\\u0642\\u06cc\\u0628"}`;',
       'const role=net.role==="spectator"?"Spectator":net.role==="p2"?"Player 2":"Player 1";if(statusEl)statusEl.textContent=`${state.msg} | ${role} | ${net.peer?"Rival online":"Waiting for rival"}`;'
+    )
+    .replace(
+      'const role=net.role==="spectator"?"Spectator":net.role==="p2"?"Player 2":"Player 1";if(statusEl)statusEl.textContent=`${state.msg} | ${role} | ${net.peer?"Rival online":"Waiting for rival"}`;',
+      'const role=net.role==="pending"?"Connecting":net.role==="spectator"?"Spectator":net.role==="p2"?"Player 2":"Player 1";if(statusEl)statusEl.textContent=`${state.msg} | ${role} | ${net.peer?"Rival online":"Waiting for rival"}`;'
+    )
+    .replace(
+      'function local(){return net.role==="spectator"?null:players[net.role]||players.p1;}',
+      'function local(){return net.role==="pending"||net.role==="spectator"?null:players[net.role]||players.p1;}'
     )
     .replace(
       'window.render_game_to_text=()=>JSON.stringify({mode:state.started?"playing":"menu",role:net.role,message:state.msg,player:local()?{x:+local().pos.x.toFixed(2),y:+local().pos.y.toFixed(2),z:+local().pos.z.toFixed(2),health:Math.ceil(local().health),grounded:local().grounded}:null,bullets:bullets.length});',
