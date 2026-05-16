@@ -171,20 +171,27 @@ server.listen(PORT, () => {
 
 const wss = new WebSocketServer({ server });
 const clients = new Map();
+let joinCounter = 0;
 
 function getOpenClients() {
   return [...clients.values()].filter((client) => client.socket.readyState === 1);
 }
 
-function nextRole() {
-  const activeRoles = new Set(getOpenClients().map((client) => client.role));
-  if (!activeRoles.has("p1")) {
-    return "p1";
-  }
-  if (!activeRoles.has("p2")) {
-    return "p2";
-  }
-  return "spectator";
+function normalizeRoles(notify = false) {
+  const openClients = getOpenClients().sort((a, b) => a.joinedAt - b.joinedAt);
+  openClients.forEach((client, index) => {
+    const previousRole = client.role;
+    client.role = index === 0 ? "p1" : index === 1 ? "p2" : "spectator";
+    if (notify && previousRole !== client.role && client.socket.readyState === 1) {
+      client.socket.send(JSON.stringify({
+        type: "welcome",
+        id: client.id,
+        role: client.role,
+        players: presencePayload().players,
+      }));
+    }
+  });
+  return openClients;
 }
 
 function broadcast(payload, exceptSocket = null) {
@@ -210,10 +217,12 @@ wss.on("connection", (socket) => {
   const id = randomUUID();
   const client = {
     id,
-    role: nextRole(),
+    role: "spectator",
     socket,
+    joinedAt: ++joinCounter,
   };
   clients.set(id, client);
+  normalizeRoles();
 
   socket.send(JSON.stringify({
     type: "welcome",
@@ -259,6 +268,7 @@ wss.on("connection", (socket) => {
 
   socket.on("close", () => {
     clients.delete(id);
+    normalizeRoles(true);
     broadcast(presencePayload());
   });
 });
