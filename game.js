@@ -1,14 +1,15 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 
 (() => {
+  const byId = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
   const canvas = document.getElementById("game");
   const overlay = document.getElementById("overlay");
-  const startButton = document.getElementById("start-button");
-  const overlayNote = document.getElementById("overlay-note");
-  const p1HealthValue = document.getElementById("p1-health");
-  const p2HealthValue = document.getElementById("p2-health");
-  const p1ScoreValue = document.getElementById("p1-score");
-  const p2ScoreValue = document.getElementById("p2-score");
+  const startButton = byId("start-button", "start");
+  const overlayNote = byId("overlay-note");
+  const p1HealthValue = byId("p1-health", "p1");
+  const p2HealthValue = byId("p2-health", "p2");
+  const p1ScoreValue = byId("p1-score", "s1");
+  const p2ScoreValue = byId("p2-score", "s2");
   const enemiesValue = document.getElementById("enemies");
   const statusValue = document.getElementById("status");
   const topAlertFill = document.getElementById("top-alert-fill");
@@ -341,7 +342,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
     const platform = nearestPlatform(player.pos);
     const desiredUp = tmp.copy(player.pos).sub(platform.center).normalize();
-    player.up.lerp(desiredUp, 1 - Math.exp(-12 * dt)).normalize();
+    player.up.lerp(desiredUp, 1 - Math.exp(-26 * dt)).normalize();
     const forward = tmp2.copy(cameraState.forward).projectOnPlane(player.up);
     if (forward.lengthSq() < 0.001) forward.copy(player.forward).projectOnPlane(player.up);
     forward.normalize();
@@ -368,7 +369,14 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       spawnEffect(player.pos, player.color, 0.35);
     }
     input.jump = false;
-    player.vel.addScaledVector(player.up, -31 * dt);
+    const gravityUp = tmp.copy(player.pos).sub(platform.center).normalize();
+    const gravityPull = player.grounded ? 42 : 118;
+    player.vel.addScaledVector(gravityUp, -gravityPull * dt);
+    if (!player.grounded) {
+      const surfaceGap = player.pos.distanceTo(platform.center) - (platform.radius + 0.9);
+      const magnetStrength = THREE.MathUtils.clamp(1 - surfaceGap / 38, 0.18, 1) * 82;
+      player.vel.addScaledVector(gravityUp, -magnetStrength * dt);
+    }
     player.pos.addScaledVector(player.vel, dt);
     landPlayer(player);
 
@@ -400,7 +408,10 @@ import * as THREE from "./node_modules/three/build/three.module.js";
         const inward = player.vel.dot(normal);
         if (inward < 0) player.vel.addScaledVector(normal, -inward);
       }
-      if (Math.abs(dist - surface) < 0.45 && player.vel.dot(normal) < 8) {
+      if (Math.abs(dist - surface) < 1.65 && player.vel.dot(normal) < 22) {
+        player.pos.copy(platform.center).addScaledVector(normal, surface);
+        const normalSpeed = player.vel.dot(normal);
+        if (normalSpeed < 0) player.vel.addScaledVector(normal, -normalSpeed);
         player.grounded = true;
         player.platform = platform;
         player.up.copy(normal);
@@ -472,8 +483,13 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function fire(player) {
-    const direction = camera.getWorldDirection(new THREE.Vector3()).normalize();
-    const muzzle = player.pos.clone().addScaledVector(player.up, 0.72).addScaledVector(player.forward, 1.0);
+    const crosshairDirection = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    const aimForward = cameraState.forward.clone().projectOnPlane(player.up);
+    if (aimForward.lengthSq() < 0.001) aimForward.copy(player.forward).projectOnPlane(player.up);
+    aimForward.normalize();
+    const muzzle = player.pos.clone().addScaledVector(player.up, 0.72).addScaledVector(aimForward, 1.0);
+    const crosshairPoint = camera.position.clone().addScaledVector(crosshairDirection, 90);
+    const direction = crosshairPoint.sub(muzzle).normalize();
     shoot(muzzle, direction, 72, player.id, player.bulletColor);
     player.cooldown = 0.15;
     playSweep(player.id === "p2" ? 380 : 460, 170, 0.08, 0.045, "square");
@@ -725,22 +741,22 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   function updateUi() {
     const local = localPlayer();
-    p1HealthValue.textContent = Math.ceil(players.p1.health);
-    p2HealthValue.textContent = Math.ceil(players.p2.health);
-    p1ScoreValue.textContent = scores.p1;
-    p2ScoreValue.textContent = scores.p2;
-    enemiesValue.textContent = enemies.filter((enemy) => !enemy.dead).length;
+    if (p1HealthValue) p1HealthValue.textContent = Math.ceil(players.p1.health);
+    if (p2HealthValue) p2HealthValue.textContent = Math.ceil(players.p2.health);
+    if (p1ScoreValue) p1ScoreValue.textContent = p1ScoreValue.id === "s1" ? `${scores.p1} امتیاز` : scores.p1;
+    if (p2ScoreValue) p2ScoreValue.textContent = p2ScoreValue.id === "s2" ? `${scores.p2} امتیاز` : scores.p2;
+    if (enemiesValue) enemiesValue.textContent = enemies.filter((enemy) => !enemy.dead).length;
     const roleText = net.role === "spectator" ? "تماشاگر" : net.role === "p2" ? "بازیکن ۲" : "بازیکن ۱";
     const peer = net.peer ? "رقیب وصل است" : "منتظر رقیب";
-    statusValue.textContent = `${state.message} | ${roleText} | ${peer}`;
+    if (statusValue) statusValue.textContent = `${state.message} | ${roleText} | ${peer}`;
     const healthRatio = local ? local.health / 100 : 0;
-    topAlertFill.style.transform = `scaleX(${THREE.MathUtils.clamp(healthRatio, 0, 1)})`;
-    topAlertText.textContent = local ? `${local.label} ${Math.ceil(local.health)}` : "تماشاگر";
+    if (topAlertFill) topAlertFill.style.transform = `scaleX(${THREE.MathUtils.clamp(healthRatio, 0, 1)})`;
+    if (topAlertText) topAlertText.textContent = local ? `${local.label} ${Math.ceil(local.health)}` : "تماشاگر";
   }
 
   function showOverlay(title, note) {
-    startButton.textContent = title;
-    overlayNote.textContent = note;
+    if (startButton) startButton.textContent = title;
+    if (overlayNote) overlayNote.textContent = note;
     overlay.classList.add("visible");
     document.body.classList.add("overlay-open");
   }
@@ -893,7 +909,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   window.addEventListener("mouseup", () => {
     input.fire = false;
   });
-  startButton.addEventListener("click", startGame);
+  startButton?.addEventListener("click", startGame);
 
   if (touchStick) {
     touchStick.addEventListener("pointermove", (event) => {
