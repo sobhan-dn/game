@@ -1,8 +1,10 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Void Spheres Duel</title>
   <link rel="stylesheet" href="./styles.css" />
   <script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
@@ -11,16 +13,24 @@
 <body>
   <canvas id="game"></canvas>
   <div id="hud">
-    <div class="panel"><span>بازیکن ۱</span><b id="p1">100</b><small id="s1">0 امتیاز</small></div>
-    <div class="panel"><span>بازیکن ۲</span><b id="p2">100</b><small id="s2">0 امتیاز</small></div>
-    <div class="panel wide"><span>وضعیت</span><b id="status">اتصال...</b></div>
+    <div class="panel"><span>PLAYER 1</span><b id="p1">100</b><small id="s1">0 points</small></div>
+    <div class="panel"><span>PLAYER 2</span><b id="p2">100</b><small id="s2">0 points</small></div>
+    <div class="panel"><span>TIME</span><b id="timer">2:00</b><small>highest score wins</small></div>
+    <div class="panel wide"><span>STATUS</span><b id="status">Connecting...</b></div>
+  </div>
+  <div id="touch-controls" aria-hidden="true">
+    <div id="touch-stick"><span id="touch-stick-knob"></span></div>
+    <div id="touch-actions">
+      <button id="touch-jump" class="touch-button">JUMP</button>
+      <button id="touch-fire" class="touch-button fire">FIRE</button>
+    </div>
   </div>
   <div id="overlay" class="show">
     <div class="card">
       <p class="eyebrow">Void Spheres Duel</p>
-      <h1>دوئل آنلاین روی کره‌ها</h1>
-      <p>نفر اول بازیکن ۱ و نفر دوم بازیکن ۲ می‌شود. با W A S D حرکت کن، Space بپر، کلیک کن برای شلیک.</p>
-      <button id="start">شروع بازی</button>
+      <h1>Two-minute sphere duel</h1>
+      <p>Score 1 point for every red unit destroyed and 1 point for every online rival hit. When the clock hits zero, the higher score wins.</p>
+      <button id="start">Start Match</button>
     </div>
   </div>
 </body>
