@@ -1003,18 +1003,19 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   });
 
   if (touchStick) {
+    let stickPointerId = null;
     const resetTouchStick = () => {
       input.f = input.b = input.l = input.r = false;
+      stickPointerId = null;
       if (touchStickKnob) touchStickKnob.style.transform = "translate(-50%, -50%)";
       touchStick.classList.remove("active");
     };
-    const updateTouchStick = (event) => {
-      event.preventDefault();
+    const updateTouchStick = (point) => {
       const rect = touchStick.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
-      const dx = event.clientX - cx;
-      const dy = event.clientY - cy;
+      const dx = point.clientX - cx;
+      const dy = point.clientY - cy;
       const max = rect.width * 0.38;
       const len = Math.min(max, Math.hypot(dx, dy));
       const a = Math.atan2(dy, dx);
@@ -1027,15 +1028,33 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       if (touchStickKnob) touchStickKnob.style.transform = `translate(calc(-50% + ${nx * max}px), calc(-50% + ${ny * max}px))`;
     };
     touchStick.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      stickPointerId = event.pointerId;
       touchStick.setPointerCapture?.(event.pointerId);
       touchStick.classList.add("active");
       startGame();
       updateTouchStick(event);
     });
-    touchStick.addEventListener("pointermove", updateTouchStick);
+    touchStick.addEventListener("pointermove", (event) => {
+      if (stickPointerId !== null && event.pointerId !== stickPointerId) return;
+      event.preventDefault();
+      updateTouchStick(event);
+    });
     touchStick.addEventListener("pointerup", resetTouchStick);
     touchStick.addEventListener("pointercancel", resetTouchStick);
     touchStick.addEventListener("lostpointercapture", resetTouchStick);
+    touchStick.addEventListener("touchstart", (event) => {
+      event.preventDefault();
+      touchStick.classList.add("active");
+      startGame();
+      updateTouchStick(event.touches[0]);
+    }, { passive: false });
+    touchStick.addEventListener("touchmove", (event) => {
+      event.preventDefault();
+      if (event.touches[0]) updateTouchStick(event.touches[0]);
+    }, { passive: false });
+    touchStick.addEventListener("touchend", resetTouchStick);
+    touchStick.addEventListener("touchcancel", resetTouchStick);
   }
   touchJump?.addEventListener("pointerdown", () => {
     input.jump = true;

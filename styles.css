@@ -494,6 +494,10 @@ body.target-locked #crosshair span:last-child::after {
 }
 
 @media (max-width: 640px) {
+  #touch-controls {
+    display: block;
+  }
+
   #top-alert {
     top: max(7px, env(safe-area-inset-top));
     height: 16px;
