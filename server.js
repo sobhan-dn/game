@@ -132,6 +132,10 @@ function patchGameScript(source) {
       'state.msg="Match live";'
     )
     .replace(
+      'function place(p,plat,up){p.platform=plat;p.up.copy(up);p.pos.copy(plat.center).addScaledVector(up,plat.radius+.9);p.vel.set(0,0,0);p.health=100;p.alive=true;p.grounded=true;p.jumpGrace=0;sync(p);} function start(){ensureAudio(); if(state.ended)reset(true); state.started=true; state.msg="Match live"; overlay?.classList.remove("show"); sweep(440,720,.14,.07,"triangle"); updateUi();}',
+      'function place(p,plat,up){p.platform=plat;p.up.copy(up);p.pos.copy(plat.center).addScaledVector(up,plat.radius+.9);p.vel.set(0,0,0);p.health=100;p.alive=true;p.grounded=true;p.jumpGrace=0;sync(p);} function start(){ensureAudio(); if(net.role==="pending"){state.msg="Connecting to server";overlay?.classList.add("show");updateUi();return;}if(net.role==="spectator"){state.msg="Spectator mode";overlay?.classList.add("show");updateUi();return;}if(!net.peer){state.msg="Waiting for second player";overlay?.classList.add("show");updateUi();return;} if(state.ended)reset(true); state.started=true; state.msg="Match live"; overlay?.classList.remove("show"); sweep(440,720,.14,.07,"triangle"); updateUi();}'
+    )
+    .replace(
       'if(state.started&&!state.ended){updateLocal(local(),dt);updateRemote(remote(),dt);updateEnemies(dt);updateBullets(dt);sendState();}',
       'if(state.started&&!state.ended){state.timeLeft=Math.max(0,state.timeLeft-dt);if(state.timeLeft<=0)finish();updateLocal(local(),dt);updateRemote(remote(),dt);updateEnemies(dt);updateEnemySpawns(dt);updateBullets(dt);sendState();}'
     )
@@ -176,6 +180,10 @@ function patchGameScript(source) {
       'if(!net.connected||net.ws.readyState!==WebSocket.OPEN||net.role==="pending"||net.role==="spectator")return;'
     )
     .replace(
+      'function send(o){if(net.ws?.readyState===WebSocket.OPEN)net.ws.send(JSON.stringify(o));} function presence(list){net.peer=list.some(x=>x.role!==net.role&&(x.role==="p1"||x.role==="p2"));}',
+      'function send(o){if(net.ws?.readyState===WebSocket.OPEN)net.ws.send(JSON.stringify(o));} function presence(list){const blue=list.some(x=>x.role==="p1"),yellow=list.some(x=>x.role==="p2");net.peer=blue&&yellow&&(net.role==="p1"||net.role==="p2");if(!net.peer&&!state.ended){state.started=false;input.fire=false;state.msg=net.role==="spectator"?"Spectator mode":"Waiting for both players";if(net.role!=="spectator")overlay?.classList.add("show");}}'
+    )
+    .replace(
       'if(s1El)s1El.textContent=`${scores.p1} \\u0627\\u0645\\u062a\\u06cc\\u0627\\u0632`;if(s2El)s2El.textContent=`${scores.p2} \\u0627\\u0645\\u062a\\u06cc\\u0627\\u0632`;',
       'if(s1El)s1El.textContent=`${scores.p1} points`;if(s2El)s2El.textContent=`${scores.p2} points`;const timerEl=document.getElementById("timer");if(timerEl){const v=Math.max(0,Math.ceil(state.timeLeft||120));timerEl.textContent=`${Math.floor(v/60)}:${String(v%60).padStart(2,"0")}`;}'
     )
@@ -193,7 +201,7 @@ function patchGameScript(source) {
     )
     .replace(
       'window.render_game_to_text=()=>JSON.stringify({mode:state.started?"playing":"menu",role:net.role,message:state.msg,player:local()?{x:+local().pos.x.toFixed(2),y:+local().pos.y.toFixed(2),z:+local().pos.z.toFixed(2),health:Math.ceil(local().health),grounded:local().grounded}:null,bullets:bullets.length});',
-      'window.render_game_to_text=()=>JSON.stringify({mode:state.ended?"ended":state.started?"playing":"menu",role:net.role,message:state.msg,timeLeft:+(state.timeLeft||0).toFixed(1),scores,player:local()?{x:+local().pos.x.toFixed(2),y:+local().pos.y.toFixed(2),z:+local().pos.z.toFixed(2),health:Math.ceil(local().health),grounded:local().grounded}:null,enemiesRemaining:enemies.filter(e=>!e.dead).length,bullets:bullets.length});'
+      'window.render_game_to_text=()=>JSON.stringify({mode:state.ended?"ended":state.started?"playing":"menu",role:net.role,message:state.msg,timeLeft:+(state.timeLeft||0).toFixed(1),scores,player:local()?{x:+local().pos.x.toFixed(2),y:+local().pos.y.toFixed(2),z:+local().pos.z.toFixed(2),health:Math.ceil(local().health),grounded:local().grounded}:null,enemiesRemaining:enemies.filter(e=>!e.dead).length,bullets:bullets.length,peer:net.peer});'
     )
     .replace(
       'startBtn?.addEventListener("click",start);',
@@ -208,6 +216,7 @@ server.listen(PORT, () => {
 const wss = new WebSocketServer({ server });
 const clients = new Map();
 let joinCounter = 0;
+const roleSlots = new Map();
 
 function getOpenClients() {
   return [...clients.values()].filter((client) => client.socket.readyState === 1);
@@ -215,16 +224,33 @@ function getOpenClients() {
 
 function normalizeRoles(notify = false) {
   const openClients = getOpenClients().sort((a, b) => a.joinedAt - b.joinedAt);
-  const assignedIdentities = new Set();
-  let playerIndex = 0;
+  const openPlayerIds = new Set(openClients.map((client) => client.playerId));
+  for (const [role, playerId] of roleSlots) {
+    if (!openPlayerIds.has(playerId)) {
+      roleSlots.delete(role);
+    }
+  }
+  const assignedIdentities = new Set(roleSlots.values());
+  const activePlayerIds = new Set();
   openClients.forEach((client) => {
     const previousRole = client.role;
-    if (assignedIdentities.has(client.playerId)) {
+    if (activePlayerIds.has(client.playerId)) {
       client.role = "spectator";
+    } else if (assignedIdentities.has(client.playerId)) {
+      client.role = roleSlots.get("p1") === client.playerId ? "p1" : roleSlots.get("p2") === client.playerId ? "p2" : "spectator";
+      activePlayerIds.add(client.playerId);
     } else {
       assignedIdentities.add(client.playerId);
-      client.role = playerIndex === 0 ? "p1" : playerIndex === 1 ? "p2" : "spectator";
-      playerIndex += 1;
+      activePlayerIds.add(client.playerId);
+      if (!roleSlots.has("p1")) {
+        roleSlots.set("p1", client.playerId);
+        client.role = "p1";
+      } else if (!roleSlots.has("p2")) {
+        roleSlots.set("p2", client.playerId);
+        client.role = "p2";
+      } else {
+        client.role = "spectator";
+      }
     }
     if (notify && previousRole !== client.role && client.socket.readyState === 1) {
       client.socket.send(JSON.stringify({
