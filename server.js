@@ -56,6 +56,10 @@ function patchGameScript(source) {
       'net={ws:null,role:"pending",connected:false,peer:false,last:0}'
     )
     .replace(
+      'net={ws:null,role:"pending",connected:false,peer:false,last:0}',
+      'net={ws:null,role:"pending",connected:false,peer:false,last:0,playerId:getPlayerId()}'
+    )
+    .replace(
       /state=\{started:false,ended:false,msg:"[^"]+"\}/,
       'state={started:false,ended:false,msg:"Tap Start",timeLeft:120,nextEnemySpawn:0}'
     )
@@ -84,8 +88,16 @@ function patchGameScript(source) {
       'ws.onopen=()=>{net.connected=true;state.msg="Online server connected";updateUi();};'
     )
     .replace(
+      'function connect(){const ws=new WebSocket(`${location.protocol==="https:"?"wss":"ws"}://${location.host}`);net.ws=ws;',
+      'function connect(){const base=`${location.protocol==="https:"?"wss":"ws"}://${location.host}`,ws=new WebSocket(`${base}?playerId=${encodeURIComponent(net.playerId)}`);net.ws=ws;'
+    )
+    .replace(
+      'ws.onclose=()=>{net.connected=false;net.peer=false;setTimeout(connect,1800);};',
+      'ws.onclose=()=>{net.connected=false;net.peer=false;net.role="pending";setTimeout(connect,1800);};'
+    )
+    .replace(
       /function updateUi\(\)\{[\s\S]*?\}\nfunction local/,
-      'function updateUi(){if(p1El)p1El.textContent=Math.ceil(players.p1.health);if(p2El)p2El.textContent=Math.ceil(players.p2.health);if(s1El)s1El.textContent=`${scores.p1} points`;if(s2El)s2El.textContent=`${scores.p2} points`;const timerEl=document.getElementById("timer");if(timerEl){const v=Math.max(0,Math.ceil(state.timeLeft||120));timerEl.textContent=`${Math.floor(v/60)}:${String(v%60).padStart(2,"0")}`;}const role=net.role==="spectator"?"Spectator":net.role==="p2"?"Player 2":"Player 1";if(statusEl)statusEl.textContent=`${state.msg} | ${role} | ${net.peer?"Rival online":"Waiting for rival"}`;}\nfunction local'
+      'function getPlayerId(){const k="void-spheres-player-id",mk=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(16).slice(2)}`;try{const old=localStorage.getItem(k);if(old)return old;const id=mk();localStorage.setItem(k,id);return id}catch{return mk()}}\nfunction updateUi(){if(p1El)p1El.textContent=Math.ceil(players.p1.health);if(p2El)p2El.textContent=Math.ceil(players.p2.health);if(s1El)s1El.textContent=`${scores.p1} points`;if(s2El)s2El.textContent=`${scores.p2} points`;const timerEl=document.getElementById("timer");if(timerEl){const v=Math.max(0,Math.ceil(state.timeLeft||120));timerEl.textContent=`${Math.floor(v/60)}:${String(v%60).padStart(2,"0")}`;}const role=net.role==="spectator"?"Spectator":net.role==="p2"?"Player 2":"Player 1";if(statusEl)statusEl.textContent=`${state.msg} | ${role} | ${net.peer?"Rival online":"Waiting for rival"}`;}\nfunction local'
     )
     .replace(
       "health:100,alive:true,grounded:true,platform:null,cool:0,target:null};",
@@ -203,9 +215,17 @@ function getOpenClients() {
 
 function normalizeRoles(notify = false) {
   const openClients = getOpenClients().sort((a, b) => a.joinedAt - b.joinedAt);
-  openClients.forEach((client, index) => {
+  const assignedIdentities = new Set();
+  let playerIndex = 0;
+  openClients.forEach((client) => {
     const previousRole = client.role;
-    client.role = index === 0 ? "p1" : index === 1 ? "p2" : "spectator";
+    if (assignedIdentities.has(client.playerId)) {
+      client.role = "spectator";
+    } else {
+      assignedIdentities.add(client.playerId);
+      client.role = playerIndex === 0 ? "p1" : playerIndex === 1 ? "p2" : "spectator";
+      playerIndex += 1;
+    }
     if (notify && previousRole !== client.role && client.socket.readyState === 1) {
       client.socket.send(JSON.stringify({
         type: "welcome",
@@ -237,10 +257,12 @@ function presencePayload() {
   };
 }
 
-wss.on("connection", (socket) => {
+wss.on("connection", (socket, request) => {
   const id = randomUUID();
+  const playerId = readPlayerId(request);
   const client = {
     id,
+    playerId,
     role: "spectator",
     socket,
     joinedAt: ++joinCounter,
@@ -283,6 +305,10 @@ wss.on("connection", (socket) => {
       return;
     }
 
+    if (client.role !== "p1" && client.role !== "p2") {
+      return;
+    }
+
     broadcast({
       ...message,
       from: client.role,
@@ -296,3 +322,13 @@ wss.on("connection", (socket) => {
     broadcast(presencePayload());
   });
 });
+
+function readPlayerId(request) {
+  try {
+    const url = new URL(request.url || "/", `http://${request.headers?.host || "localhost"}`);
+    const value = url.searchParams.get("playerId") || "";
+    return /^[a-zA-Z0-9._:-]{8,120}$/.test(value) ? value : randomUUID();
+  } catch {
+    return randomUUID();
+  }
+}
