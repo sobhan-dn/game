@@ -4,9 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "node scripts/build-ios-web.mjs",
+    "ios:sync": "npm run build && npx cap sync ios",
+    "ios:open": "npm run ios:sync && npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4",
     "three": "^0.184.0",
     "ws": "^8.20.1"
   },

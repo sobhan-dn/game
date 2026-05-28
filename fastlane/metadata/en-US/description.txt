@@ -1,0 +1,14 @@
+Void Spheres Duel is a fast action platformer set on floating neon spheres.
+
+Jump between platforms, fire at your opponent, survive enemy pressure, collect coins, and chase your best score in short, intense matches designed for mobile play. Start instantly in Solo vs AI or fight another player online.
+
+Features:
+- Instant Solo vs AI battles
+- Real-time two-player duels
+- Floating 3D arena built with smooth Three.js visuals
+- Touch controls tuned for phone play
+- Shooting, jumping, enemies, damage, streak bonuses, scoring, and instant restarts
+- Coins, daily score targets, local best score, and best streak tracking
+- Quick sessions that are easy to start and hard to master
+
+Every match is about movement, timing, and pressure. Stay alive, control the arena, and make every shot count.

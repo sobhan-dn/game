@@ -1,0 +1,10 @@
+Void Spheres Duel can be played without an account.
+
+To test:
+1. Launch the app.
+2. Select Solo vs AI.
+3. Tap Start Match.
+4. Use the left touch stick to move, the Jump button to jump, and the Fire button to shoot.
+5. Score points to see coins, streaks, best score, and daily target progress update.
+
+Online Duel requires two separate clients. If no second player is available, use Solo vs AI for immediate gameplay review.

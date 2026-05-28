@@ -1,0 +1,21 @@
+{
+  "appId": "com.sobhandn.voidspheres",
+  "appName": "Void Spheres Duel",
+  "webDir": "dist",
+  "server": {
+    "iosScheme": "voidspheres"
+  },
+  "ios": {
+    "contentInset": "never",
+    "allowsLinkPreview": false,
+    "scrollEnabled": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#02050d",
+      "showSpinner": false
+    }
+  }
+}

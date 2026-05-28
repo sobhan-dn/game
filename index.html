@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Void Spheres" />
+    <meta name="theme-color" content="#02050d" />
+    <meta name="format-detection" content="telephone=no" />
     <title>Void Spheres Duel</title>
     <link rel="stylesheet" href="./styles.css" />
     <script type="importmap">
@@ -21,22 +25,58 @@
     <div id="app">
       <canvas id="game"></canvas>
 
-      <div id="top-alert" aria-hidden="true">
-        <div id="top-alert-fill"></div>
-        <div id="top-alert-glow"></div>
-        <span id="top-alert-text">HEALTH</span>
-      </div>
-
       <div id="hud">
         <div class="panel player-panel p1-panel">
-          <span class="label">PLAYER 1</span>
-          <strong id="p1-health">100</strong>
-          <small><span id="p1-score">0</span> points</small>
+          <div class="player-heading">
+            <span class="label">PLAYER 1</span>
+            <strong>BLUE</strong>
+          </div>
+          <div class="health-meter" aria-label="Player 1 health">
+            <span id="p1-health-bar" class="health-fill"></span>
+          </div>
+          <div class="health-readout">
+            <span>HP</span>
+            <strong id="p1-health">100</strong>
+          </div>
         </div>
         <div class="panel player-panel p2-panel">
-          <span class="label">PLAYER 2</span>
-          <strong id="p2-health">100</strong>
-          <small><span id="p2-score">0</span> points</small>
+          <div class="player-heading">
+            <span class="label">PLAYER 2</span>
+            <strong>YELLOW</strong>
+          </div>
+          <div class="health-meter" aria-label="Player 2 health">
+            <span id="p2-health-bar" class="health-fill"></span>
+          </div>
+          <div class="health-readout">
+            <span>HP</span>
+            <strong id="p2-health">100</strong>
+          </div>
+        </div>
+        <div class="panel score-panel">
+          <span class="label">SCORE</span>
+          <div class="score-row p1-score-row">
+            <span>P1</span>
+            <strong id="p1-score">0</strong>
+          </div>
+          <div class="score-row p2-score-row">
+            <span>P2</span>
+            <strong id="p2-score">0</strong>
+          </div>
+        </div>
+        <div class="panel streak-panel">
+          <span class="label">STREAK</span>
+          <strong id="streak">0</strong>
+          <small id="best-score">BEST 0</small>
+        </div>
+        <div class="panel progress-panel">
+          <span class="label">COINS</span>
+          <strong id="coins">0</strong>
+          <small id="rank">ROOKIE</small>
+        </div>
+        <div class="panel mission-panel">
+          <span class="label">DAILY</span>
+          <strong id="daily-mission">0/12</strong>
+          <small id="daily-reward">+25 COINS</small>
         </div>
         <div class="panel">
           <span class="label">RED UNITS</span>
@@ -72,12 +112,25 @@
           <p class="eyebrow">Void Spheres Duel</p>
           <h1>Two-minute sphere duel</h1>
           <p class="lead">
-            Score for every red unit you destroy and every online rival hit you land.
+            Start instantly, chase streak bonuses, collect coins, and complete the daily score target.
             When the clock hits zero, the higher score wins.
           </p>
 
+          <div class="mode-select" aria-label="Choose match mode">
+            <button id="online-mode" class="mode-button" type="button">
+              <span>Online Duel</span>
+              <small>Fight a real player</small>
+            </button>
+            <button id="ai-mode" class="mode-button active" type="button">
+              <span>Solo vs AI</span>
+              <small>Instant match</small>
+            </button>
+          </div>
+
           <ul class="controls">
-            <li><kbd>Online</kbd> First browser is Player 1, second browser is Player 2</li>
+            <li><kbd>Streak</kbd> Chain hits and red-unit kills to build bonus pressure</li>
+            <li><kbd>Coins</kbd> Earn rewards from wins, streaks, and daily targets</li>
+            <li><kbd>AI</kbd> Offline mode starts instantly against a moving yellow rival</li>
             <li><kbd>W A S D</kbd> Move across the spheres</li>
             <li><kbd>Space / Shift</kbd> Jump between spheres</li>
             <li><kbd>Click / Enter</kbd> Fire through the crosshair</li>

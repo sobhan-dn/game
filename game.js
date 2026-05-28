@@ -5,11 +5,22 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const canvas = document.getElementById("game");
   const overlay = document.getElementById("overlay");
   const startButton = byId("start-button", "start");
+  const onlineModeButton = document.getElementById("online-mode");
+  const aiModeButton = document.getElementById("ai-mode");
   const overlayNote = byId("overlay-note");
   const p1HealthValue = byId("p1-health", "p1");
   const p2HealthValue = byId("p2-health", "p2");
+  const p1HealthBar = document.getElementById("p1-health-bar");
+  const p2HealthBar = document.getElementById("p2-health-bar");
+  const p2NameLabel = document.querySelector(".p2-panel .player-heading strong");
   const p1ScoreValue = byId("p1-score", "s1");
   const p2ScoreValue = byId("p2-score", "s2");
+  const streakValue = document.getElementById("streak");
+  const bestScoreValue = document.getElementById("best-score");
+  const coinsValue = document.getElementById("coins");
+  const rankValue = document.getElementById("rank");
+  const dailyMissionValue = document.getElementById("daily-mission");
+  const dailyRewardValue = document.getElementById("daily-reward");
   const enemiesValue = document.getElementById("enemies");
   const timerValue = document.getElementById("timer");
   const statusValue = document.getElementById("status");
@@ -20,8 +31,14 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const touchJump = document.getElementById("touch-jump");
   const touchFire = document.getElementById("touch-fire");
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const isNativeIos = location.protocol === "voidspheres:" || location.protocol === "capacitor:";
+  const isCompactTouch = matchMedia("(pointer: coarse), (max-width: 760px)").matches;
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: !isCompactTouch,
+    powerPreference: "high-performance",
+  });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, isCompactTouch ? 1.5 : 2));
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -29,7 +46,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x06101a, 0.012);
-  const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 600);
+  const camera = new THREE.PerspectiveCamera(isCompactTouch ? 74 : 68, innerWidth / innerHeight, 0.1, 600);
   const root = new THREE.Group();
   scene.add(root);
 
@@ -41,9 +58,26 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   const input = { f: false, b: false, l: false, r: false, jump: false, fire: false };
   const cameraState = { forward: new THREE.Vector3(1, 0, 0) };
-  const net = { ws: null, role: "pending", connected: false, peer: false, last: 0 };
+  const net = { ws: null, role: "pending", connected: false, peer: false, ready: false, last: 0, playerId: getPlayerId() };
+  const mode = { type: "ai" };
+  const aiBrain = { nextJump: 0, nextStrafe: 0, strafe: 1, fireDelay: 0, aggression: 0.75 };
   const roundSeconds = 120;
-  const state = { started: false, ended: false, message: "Tap Start", timeLeft: roundSeconds, nextEnemySpawn: 0 };
+  const state = {
+    started: false,
+    ended: false,
+    message: "Tap Start",
+    timeLeft: roundSeconds,
+    nextEnemySpawn: 0,
+    streak: 0,
+    streakTimer: 0,
+    bestStreak: readNumber("void-spheres-best-streak"),
+    bestScore: readNumber("void-spheres-best-score"),
+    coins: readNumber("void-spheres-coins"),
+    matchCoins: 0,
+    dailyTarget: 12,
+    dailyProgress: readDailyProgress(),
+    dailyClaimed: readTodayFlag("void-spheres-daily-claimed"),
+  };
   const scores = { p1: 0, p2: 0 };
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   const audio = { context: null, master: null, music: null, sfx: null, nextBeat: 0, step: 0 };
@@ -83,7 +117,6 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   initScene();
   resetGame();
-  connectOnline();
   animate();
 
   function makePlayer(id, label, color, bulletColor) {
@@ -183,6 +216,11 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     effects.length = 0;
     scores.p1 = 0;
     scores.p2 = 0;
+    state.streak = 0;
+    state.streakTimer = 0;
+    state.matchCoins = 0;
+    state.dailyProgress = readDailyProgress();
+    state.dailyClaimed = readTodayFlag("void-spheres-daily-claimed");
     state.started = false;
     state.ended = false;
     state.message = "Tap Start";
@@ -192,12 +230,16 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     createPlatforms();
     placePlayer(players.p1, platforms[0], new THREE.Vector3(0, 1, 0));
     placePlayer(players.p2, platforms[0], new THREE.Vector3(0.45, 0.88, 0.12).normalize());
+    players.p2.label = mode.type === "ai" ? "AI Rival" : "Player 2";
+    if (p2NameLabel) p2NameLabel.textContent = mode.type === "ai" ? "AI RIVAL" : "YELLOW";
     cameraState.forward.copy(players[net.role] ? players[net.role].forward : players.p1.forward);
     createEnemies();
-    showOverlay("Start Match", "Open two browsers to play online. Player 1 joins first, Player 2 joins second.");
+    showOverlay("Start Match", mode.type === "ai"
+      ? "Solo vs AI starts instantly. Chain hits for streak bonuses."
+      : "Open two browsers to play online. Player 1 joins first, Player 2 joins second.");
     updateCamera(0.016);
     updateUi();
-    if (broadcast) send({ type: "restart" });
+    if (broadcast && mode.type === "online") send({ type: "restart" });
   }
 
   function createPlatforms() {
@@ -304,6 +346,39 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   function startGame() {
     ensureAudio();
+    if (mode.type === "ai") {
+      if (state.ended) resetGame(false);
+      net.role = "p1";
+      net.ready = true;
+      net.peer = true;
+      players.p1.remote = false;
+      players.p2.remote = false;
+      players.p2.label = "AI Rival";
+      state.started = true;
+      state.message = "Solo match live";
+      hideOverlay();
+      playSweep(360, 780, 0.2, 0.08, "triangle");
+      updateUi();
+      return;
+    }
+    if (net.role === "pending") {
+      state.message = "Connecting to server";
+      showOverlay("Waiting", "Connecting to the online server...");
+      updateUi();
+      return;
+    }
+    if (net.role === "spectator") {
+      state.message = "Spectator mode";
+      showOverlay("Spectating", "Two players are already in the match.");
+      updateUi();
+      return;
+    }
+    if (!net.ready) {
+      state.message = "Waiting for second player";
+      showOverlay("Waiting for Rival", "The match starts only when both blue and yellow players are online.");
+      updateUi();
+      return;
+    }
     if (state.ended) {
       resetGame(true);
     }
@@ -342,12 +417,18 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       if (state.timeLeft <= 0) finishByScore("Time is up.");
       updateRespawn(local, dt);
       updatePlayer(local, dt);
-      updateRemotePlayer(remotePlayer(), dt);
+      if (mode.type === "ai") {
+        updateAiPlayer(players.p2, dt);
+      } else {
+        updateRemotePlayer(remotePlayer(), dt);
+      }
       updateEnemies(dt);
       updateEnemySpawns(dt);
       updateBullets(dt);
       sendState();
     }
+    state.streakTimer = Math.max(0, state.streakTimer - dt);
+    if (state.streakTimer <= 0) state.streak = 0;
     updateEffects(dt);
     updateMusic();
     updateCamera(dt);
@@ -432,6 +513,74 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     syncMesh(player);
   }
 
+  function updateAiPlayer(player, dt) {
+    if (!player) return;
+    updateRespawn(player, dt);
+    if (!player.alive) return;
+    const target = players.p1;
+    player.cooldown = Math.max(0, player.cooldown - dt);
+    player.invuln = Math.max(0, (player.invuln || 0) - dt);
+    player.jumpGrace = Math.max(0, (player.jumpGrace || 0) - dt);
+    aiBrain.nextJump = Math.max(0, aiBrain.nextJump - dt);
+    aiBrain.nextStrafe = Math.max(0, aiBrain.nextStrafe - dt);
+    aiBrain.fireDelay = Math.max(0, aiBrain.fireDelay - dt);
+    aiBrain.aggression = 0.72 + THREE.MathUtils.clamp(scores.p1 - scores.p2, 0, 5) * 0.05;
+    if (aiBrain.nextStrafe <= 0) {
+      aiBrain.strafe = Math.random() < 0.5 ? -1 : 1;
+      aiBrain.nextStrafe = 0.8 + Math.random() * 1.4;
+    }
+    if (player.grounded && player.platform) player.pos.add(player.platform.delta);
+
+    const platform = nearestPlatform(player.pos);
+    const desiredUp = tmp.copy(player.pos).sub(platform.center).normalize();
+    player.up.lerp(desiredUp, 1 - Math.exp(-24 * dt)).normalize();
+    const toTarget = target.pos.clone().sub(player.pos).projectOnPlane(player.up);
+    const forward = toTarget.lengthSq() > 0.01
+      ? toTarget.normalize()
+      : player.forward.clone().projectOnPlane(player.up).normalize();
+    const right = new THREE.Vector3().crossVectors(forward, player.up).normalize();
+    const distance = player.pos.distanceTo(target.pos);
+    const move = forward.clone().multiplyScalar(distance > 16 ? 1 : -0.45).addScaledVector(right, aiBrain.strafe * 0.52).normalize();
+    const normalSpeed = player.vel.dot(player.up);
+    const tangent = player.vel.clone().sub(player.up.clone().multiplyScalar(normalSpeed));
+    tangent.addScaledVector(move, (player.grounded ? 58 : 20) * dt * aiBrain.aggression);
+    if (tangent.length() > 22) tangent.setLength(22);
+    if (player.grounded) tangent.multiplyScalar(Math.exp(-2.4 * dt));
+    player.vel.copy(tangent).addScaledVector(player.up, normalSpeed);
+
+    if (player.grounded && aiBrain.nextJump <= 0 && (distance > 18 || Math.random() < 0.04)) {
+      player.vel.addScaledVector(player.up, 23);
+      player.vel.addScaledVector(move, 16);
+      player.grounded = false;
+      player.jumpGrace = 0.38;
+      aiBrain.nextJump = 0.9 + Math.random() * 1.2;
+      spawnEffect(player.pos, player.color, 0.3);
+    }
+
+    const gravityUp = tmp.copy(player.pos).sub(platform.center).normalize();
+    const launchPhase = player.jumpGrace > 0;
+    const gravityPull = player.grounded ? 42 : launchPhase ? 48 : 122;
+    player.vel.addScaledVector(gravityUp, -gravityPull * dt);
+    if (!player.grounded) {
+      const surfaceGap = player.pos.distanceTo(platform.center) - (platform.radius + 0.9);
+      const magnetStrength = launchPhase
+        ? THREE.MathUtils.clamp(1 - surfaceGap / 16, 0, 0.35) * 22
+        : THREE.MathUtils.clamp(1 - surfaceGap / 42, 0.2, 1) * 94;
+      player.vel.addScaledVector(gravityUp, -magnetStrength * dt);
+    }
+    player.pos.addScaledVector(player.vel, dt);
+    landPlayer(player);
+
+    player.forward.lerp(forward, 1 - Math.exp(-10 * dt)).normalize();
+    if (distance < 66 && player.cooldown <= 0 && aiBrain.fireDelay <= 0 && target.alive) {
+      const lead = target.pos.clone().addScaledVector(target.vel, THREE.MathUtils.clamp(distance / 72, 0.08, 0.42));
+      fire(player, lead.sub(player.pos).normalize());
+      aiBrain.fireDelay = 0.26 + Math.random() * 0.22;
+    }
+    syncMesh(player);
+    if (player.pos.length() > 230 || player.pos.y < -90) damagePlayer(player, 100, null);
+  }
+
   function landPlayer(player) {
     player.grounded = false;
     for (const platform of platforms) {
@@ -482,7 +631,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (aliveCount >= 5 || state.nextEnemySpawn > 0) return;
     spawnEnemy();
     state.nextEnemySpawn = 1.2 + Math.random() * 1.6;
-    send({ type: "enemy-spawn", index: enemies.length - 1, platform: platforms.indexOf(enemies[enemies.length - 1].platform), lat: enemies[enemies.length - 1].lat, lon: enemies[enemies.length - 1].lon });
+    if (mode.type === "online") send({ type: "enemy-spawn", index: enemies.length - 1, platform: platforms.indexOf(enemies[enemies.length - 1].platform), lat: enemies[enemies.length - 1].lat, lon: enemies[enemies.length - 1].lon });
   }
 
   function updateBullets(dt) {
@@ -512,35 +661,35 @@ import * as THREE from "./node_modules/three/build/three.module.js";
           if (enemy.health <= 0) {
             enemy.dead = true;
             root.remove(enemy.mesh);
-            scores[bullet.owner] += 1;
+            addScore(bullet.owner, 1, "Red unit down");
             playSweep(520, 160, 0.26, 0.07, "square");
             pulseDevice(18);
-            send({ type: "enemy-down", index: e, scorer: bullet.owner });
+            if (mode.type === "online") send({ type: "enemy-down", index: e, scorer: bullet.owner });
           }
           removeBullet(i);
           break;
         }
       }
       const other = players[bullet.owner === "p1" ? "p2" : "p1"];
-      if (other.id === net.role && other.alive && bullet.pos.distanceTo(other.pos) < 1.1) {
+      if ((other.id === net.role || mode.type === "ai") && other.alive && bullet.pos.distanceTo(other.pos) < 1.1) {
         damagePlayer(other, 20, bullet.owner);
         removeBullet(i);
       }
     }
   }
 
-  function fire(player) {
+  function fire(player, forcedDirection = null) {
     const crosshairDirection = camera.getWorldDirection(new THREE.Vector3()).normalize();
     const aimForward = cameraState.forward.clone().projectOnPlane(player.up);
     if (aimForward.lengthSq() < 0.001) aimForward.copy(player.forward).projectOnPlane(player.up);
     aimForward.normalize();
     const muzzle = player.pos.clone().addScaledVector(player.up, 0.72).addScaledVector(aimForward, 1.0);
     const crosshairPoint = camera.position.clone().addScaledVector(crosshairDirection, 90);
-    const direction = crosshairPoint.sub(muzzle).normalize();
+    const direction = forcedDirection ? forcedDirection.clone().normalize() : crosshairPoint.sub(muzzle).normalize();
     shoot(muzzle, direction, 72, player.id, player.bulletColor);
     player.cooldown = 0.15;
     playSweep(player.id === "p2" ? 380 : 460, 170, 0.08, 0.045, "square");
-    send({ type: "shot", origin: pack(muzzle), direction: pack(direction), color: player.bulletColor });
+    if (mode.type === "online") send({ type: "shot", origin: pack(muzzle), direction: pack(direction), color: player.bulletColor });
   }
 
   function shoot(origin, direction, speed, owner, color) {
@@ -561,12 +710,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     spawnEffect(player.pos, player.color, 0.42);
     playSweep(170, 80, 0.2, 0.065, "sawtooth");
     if (source === "p1" || source === "p2") {
-      scores[source] += 1;
+      addScore(source, 1, "Direct hit");
       state.message = `${source === "p1" ? "Player 1" : "Player 2"} scored a hit`;
       playSweep(620, 920, 0.12, 0.045, "triangle");
       pulseDevice(14);
     }
-    if (player.id === net.role) send({ type: "damage", target: player.id, health: player.health, source, scores });
+    if (mode.type === "online" && player.id === net.role) send({ type: "damage", target: player.id, health: player.health, source, scores });
     if (player.health <= 0) {
       player.alive = false;
       player.respawnTimer = 2.4;
@@ -574,11 +723,62 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     }
   }
 
+  function addScore(owner, amount, reason) {
+    if (!scores[owner]) scores[owner] = 0;
+    const localScored = owner === net.role;
+    if (localScored) {
+      state.streak += 1;
+      state.streakTimer = 3.5;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+      writeNumber("void-spheres-best-streak", state.bestStreak);
+      state.dailyProgress = Math.min(state.dailyTarget, state.dailyProgress + amount);
+      writeDailyProgress(state.dailyProgress);
+    } else {
+      state.streak = 0;
+      state.streakTimer = 0;
+    }
+    const bonus = state.streak > 0 && state.streak % 5 === 0 ? 2 : state.streak > 0 && state.streak % 3 === 0 ? 1 : 0;
+    scores[owner] += amount + (localScored ? bonus : 0);
+    if (localScored) {
+      const coinGain = amount + bonus + (state.streak >= 5 ? 1 : 0);
+      awardCoins(coinGain, false);
+      if (!state.dailyClaimed && state.dailyProgress >= state.dailyTarget) {
+        state.dailyClaimed = true;
+        writeTodayFlag("void-spheres-daily-claimed", true);
+        awardCoins(25, true);
+        state.message = `Daily target complete: +25 coins`;
+        playSweep(580, 1280, 0.22, 0.07, "triangle");
+      }
+    }
+    if (localScored && scores[owner] > state.bestScore) {
+      state.bestScore = scores[owner];
+      writeNumber("void-spheres-best-score", state.bestScore);
+    }
+    if (bonus > 0) {
+      state.message = `${reason}: x${state.streak} streak bonus +${bonus}`;
+      playSweep(720, 1180, 0.16, 0.06, "triangle");
+    }
+  }
+
+  function awardCoins(amount, announce) {
+    state.coins += amount;
+    state.matchCoins += amount;
+    writeNumber("void-spheres-coins", state.coins);
+    if (announce) pulseDevice(20);
+  }
+
   function finishByScore(reason) {
     state.ended = true;
     input.fire = false;
     const winner = scores.p1 === scores.p2 ? "Draw" : scores.p1 > scores.p2 ? "Player 1 wins" : "Player 2 wins";
-    state.message = `${reason} ${winner}. Final score ${scores.p1}-${scores.p2}`;
+    const localWon = (net.role === "p1" && scores.p1 > scores.p2) || (net.role === "p2" && scores.p2 > scores.p1);
+    if (localWon) awardCoins(10, true);
+    if (state.bestStreak >= 8) awardCoins(5, true);
+    if (scores[net.role] > state.bestScore) {
+      state.bestScore = scores[net.role];
+      writeNumber("void-spheres-best-score", state.bestScore);
+    }
+    state.message = `${reason} ${winner}. Final ${scores.p1}-${scores.p2}. +${state.matchCoins} coins. Best ${state.bestScore}.`;
     showOverlay("Play Again", state.message);
     document.body.classList.add("game-over");
   }
@@ -590,8 +790,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (forward.lengthSq() < 0.001) forward.copy(player.forward).projectOnPlane(up);
     forward.normalize();
     cameraState.forward.copy(forward);
-    const target = player.pos.clone().addScaledVector(up, 2.3).addScaledVector(forward, 1.5);
-    const desired = target.clone().addScaledVector(forward, -13).addScaledVector(up, 4);
+    const target = player.pos.clone().addScaledVector(up, 2.2).addScaledVector(forward, 1.9);
+    const desired = target.clone().addScaledVector(forward, isCompactTouch ? -17 : -14.5).addScaledVector(up, isCompactTouch ? 5.2 : 4.5);
     camera.position.lerp(desired, 1 - Math.exp(-8 * dt));
     camera.up.copy(up);
     camera.lookAt(target);
@@ -710,19 +910,26 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function connectOnline() {
-    const wsUrl = location.protocol === "file:"
-      ? "wss://maze-heli-command.onrender.com"
+    const hostedWsUrl = "wss://maze-heli-command.onrender.com";
+    const baseWsUrl = location.protocol === "file:"
+      || isNativeIos
+      ? hostedWsUrl
       : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+    const wsUrl = `${baseWsUrl}?playerId=${encodeURIComponent(net.playerId)}`;
     const ws = new WebSocket(wsUrl);
     net.ws = ws;
     ws.addEventListener("open", () => {
+      if (mode.type === "ai") return;
       net.connected = true;
       state.message = "Online server connected";
       updateUi();
     });
     ws.addEventListener("close", () => {
+      if (mode.type === "ai") return;
       net.connected = false;
       net.peer = false;
+      net.ready = false;
+      net.role = "pending";
       state.message = "Connection lost; retrying";
       setTimeout(connectOnline, 1800);
     });
@@ -738,16 +945,17 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function onMessage(msg) {
+    if (mode.type === "ai") return;
     if (msg.type === "welcome") {
-      net.role = msg.role === "p2" || msg.role === "spectator" ? msg.role : "p1";
+      net.role = ["p1", "p2", "spectator"].includes(msg.role) ? msg.role : "pending";
       players.p1.remote = net.role !== "p1";
       players.p2.remote = net.role !== "p2";
       if (players[net.role]) {
         cameraState.forward.copy(players[net.role].forward);
       }
-      updatePresence(msg.players || []);
+      updatePresence(msg.players || [], msg.ready);
     } else if (msg.type === "presence") {
-      updatePresence(msg.players || []);
+      updatePresence(msg.players || [], msg.ready);
     } else if (msg.type === "state" && msg.from !== net.role) {
       const player = players[msg.from];
       if (player) player.target = unpackState(msg.state);
@@ -777,7 +985,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function sendState() {
-    if (!net.connected || !net.ws || net.ws.readyState !== WebSocket.OPEN || net.role === "pending" || net.role === "spectator") return;
+    if (mode.type === "ai") return;
+    if (!net.connected || !net.ready || !net.ws || net.ws.readyState !== WebSocket.OPEN || net.role === "pending" || net.role === "spectator") return;
     if (clock.elapsedTime - net.last < 1 / 15) return;
     const player = localPlayer();
     net.last = clock.elapsedTime;
@@ -799,25 +1008,123 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (net.ws?.readyState === WebSocket.OPEN) net.ws.send(JSON.stringify(payload));
   }
 
-  function updatePresence(list) {
-    net.peer = list.some((item) => item.role !== net.role && (item.role === "p1" || item.role === "p2"));
+  function updatePresence(list, serverReady = false) {
+    if (mode.type === "ai") return;
+    const blueCount = list.filter((item) => item.role === "p1").length;
+    const yellowCount = list.filter((item) => item.role === "p2").length;
+    const bothRolesOnline = blueCount === 1 && yellowCount === 1;
+    net.ready = Boolean(bothRolesOnline && serverReady && (net.role === "p1" || net.role === "p2"));
+    net.peer = Boolean(net.ready);
+    if (!net.ready && !state.ended) {
+      state.started = false;
+      input.fire = false;
+      state.message = net.role === "spectator" ? "Spectator mode" : "Waiting for both players";
+      if (net.role !== "spectator") {
+        showOverlay("Waiting for Rival", "The match starts only after both blue and yellow players are online.");
+      }
+    }
     updateUi();
+  }
+
+  function getPlayerId() {
+    const key = "void-spheres-player-id";
+    const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    try {
+      const existing = localStorage.getItem(key);
+      if (existing) return existing;
+      const created = makeId();
+      localStorage.setItem(key, created);
+      return created;
+    } catch {
+      return makeId();
+    }
+  }
+
+  function readNumber(key) {
+    try {
+      return Number(localStorage.getItem(key) || 0) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function writeNumber(key, value) {
+    try {
+      localStorage.setItem(key, String(Math.max(0, Math.floor(value))));
+    } catch {}
+  }
+
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function readDailyProgress() {
+    try {
+      const raw = JSON.parse(localStorage.getItem("void-spheres-daily-progress") || "{}");
+      return raw.date === todayKey() ? Number(raw.value || 0) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function writeDailyProgress(value) {
+    try {
+      localStorage.setItem("void-spheres-daily-progress", JSON.stringify({ date: todayKey(), value }));
+    } catch {}
+  }
+
+  function readTodayFlag(key) {
+    try {
+      return localStorage.getItem(key) === todayKey();
+    } catch {
+      return false;
+    }
+  }
+
+  function writeTodayFlag(key, value) {
+    try {
+      if (value) localStorage.setItem(key, todayKey());
+    } catch {}
+  }
+
+  function getRank(score) {
+    if (score >= 80) return "VOID ACE";
+    if (score >= 50) return "ORBIT PRO";
+    if (score >= 30) return "RIFT HUNTER";
+    if (score >= 15) return "SPHERE PILOT";
+    return "ROOKIE";
   }
 
   function updateUi() {
     const local = localPlayer();
-    if (p1HealthValue) p1HealthValue.textContent = Math.ceil(players.p1.health);
-    if (p2HealthValue) p2HealthValue.textContent = Math.ceil(players.p2.health);
+    updateHealthDisplay(players.p1, p1HealthValue, p1HealthBar);
+    updateHealthDisplay(players.p2, p2HealthValue, p2HealthBar);
     if (p1ScoreValue) p1ScoreValue.textContent = p1ScoreValue.id === "s1" ? `${scores.p1} points` : scores.p1;
     if (p2ScoreValue) p2ScoreValue.textContent = p2ScoreValue.id === "s2" ? `${scores.p2} points` : scores.p2;
+    if (streakValue) streakValue.textContent = state.streak > 0 ? `x${state.streak}` : "0";
+    if (bestScoreValue) bestScoreValue.textContent = `BEST ${state.bestScore}`;
+    if (coinsValue) coinsValue.textContent = state.coins;
+    if (rankValue) rankValue.textContent = getRank(state.bestScore);
+    if (dailyMissionValue) dailyMissionValue.textContent = state.dailyClaimed ? "DONE" : `${state.dailyProgress}/${state.dailyTarget}`;
+    if (dailyRewardValue) dailyRewardValue.textContent = state.dailyClaimed ? "COME BACK TOMORROW" : "+25 COINS";
     if (enemiesValue) enemiesValue.textContent = enemies.filter((enemy) => !enemy.dead).length;
     if (timerValue) timerValue.textContent = formatTime(state.timeLeft);
-    const roleText = net.role === "pending" ? "Connecting" : net.role === "spectator" ? "Spectator" : net.role === "p2" ? "Player 2" : "Player 1";
-    const peer = net.peer ? "Rival online" : "Waiting for rival";
-    if (statusValue) statusValue.textContent = `${state.message} | ${roleText} | ${peer}`;
+    const roleText = mode.type === "ai" ? "Solo vs AI" : net.role === "pending" ? "Connecting" : net.role === "spectator" ? "Spectator" : net.role === "p2" ? "Player 2" : "Player 1";
+    const peer = mode.type === "ai" ? `Best streak ${state.bestStreak}` : net.ready ? "Rival online" : "Waiting for rival";
+    const streak = state.streak > 1 ? ` | x${state.streak} streak` : "";
+    if (statusValue) statusValue.textContent = `${state.message}${streak} | ${roleText} | ${peer}`;
     const healthRatio = local ? local.health / 100 : 0;
     if (topAlertFill) topAlertFill.style.transform = `scaleX(${THREE.MathUtils.clamp(healthRatio, 0, 1)})`;
     if (topAlertText) topAlertText.textContent = local ? `${local.label} ${Math.ceil(local.health)}` : "Spectator";
+  }
+
+  function updateHealthDisplay(player, valueEl, barEl) {
+    const health = Math.ceil(THREE.MathUtils.clamp(player.health, 0, 100));
+    if (valueEl) valueEl.textContent = health;
+    if (!barEl) return;
+    const ratio = health / 100;
+    barEl.style.transform = `scaleX(${ratio})`;
+    barEl.classList.toggle("low", ratio <= 0.35);
   }
 
   function formatTime(seconds) {
@@ -837,12 +1144,35 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     document.body.classList.remove("overlay-open");
   }
 
+  function setMode(nextMode) {
+    if (mode.type === nextMode) return;
+    mode.type = nextMode;
+    onlineModeButton?.classList.toggle("active", nextMode === "online");
+    aiModeButton?.classList.toggle("active", nextMode === "ai");
+    if (nextMode === "ai") {
+      net.role = "p1";
+      net.ready = true;
+      net.peer = true;
+      players.p1.remote = false;
+      players.p2.remote = false;
+      state.message = "Solo vs AI selected";
+    } else {
+      net.role = net.connected ? net.role : "pending";
+      net.ready = false;
+      net.peer = false;
+      state.message = net.connected ? "Online selected" : "Connecting to server";
+      connectOnline();
+    }
+    resetGame(false);
+  }
+
   function localPlayer() {
     if (net.role === "pending" || net.role === "spectator") return null;
-    return players[net.role] || players.p1;
+    return players[net.role] || null;
   }
 
   function remotePlayer() {
+    if (net.role !== "p1" && net.role !== "p2") return null;
     return net.role === "p2" ? players.p1 : players.p2;
   }
 
@@ -875,17 +1205,17 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function loadTexture(url, fallbackFactory, rx, ry) {
-    const texture = fallbackFactory();
+    const fallback = fallbackFactory();
+    const texture = location.hostname.includes("onrender.com")
+      ? fallback
+      : loader.load(url, undefined, undefined, () => {
+        texture.copy(fallback);
+        texture.needsUpdate = true;
+      });
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(rx, ry);
-    if (!location.hostname.includes("onrender.com")) {
-      loader.load(url, (loaded) => {
-        texture.image = loaded.image;
-        texture.needsUpdate = true;
-      }, undefined, () => {});
-    }
     return texture;
   }
 
@@ -983,6 +1313,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     input.fire = false;
   });
   startButton?.addEventListener("click", startGame);
+  onlineModeButton?.addEventListener("click", () => setMode("online"));
+  aiModeButton?.addEventListener("click", () => setMode("ai"));
 
   canvas.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" || event.clientX < innerWidth * 0.38) return;
@@ -1069,11 +1401,17 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     input.fire = false;
   });
 
-  addEventListener("resize", () => {
-    camera.aspect = innerWidth / innerHeight;
+  function resizeRenderer() {
+    const width = Math.round(visualViewport?.width || innerWidth);
+    const height = Math.round(visualViewport?.height || innerHeight);
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-  });
+    renderer.setSize(width, height, false);
+  }
+
+  addEventListener("resize", resizeRenderer);
+  visualViewport?.addEventListener("resize", resizeRenderer);
+  document.addEventListener("contextmenu", (event) => event.preventDefault());
 
   window.render_game_to_text = () => JSON.stringify({
     mode: state.ended ? "ended" : state.started ? "playing" : "menu",
@@ -1081,6 +1419,14 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     message: state.message,
     timeLeft: +state.timeLeft.toFixed(1),
     scores: { ...scores },
+    streak: state.streak,
+    coins: state.coins,
+    matchCoins: state.matchCoins,
+    dailyProgress: state.dailyProgress,
+    dailyClaimed: state.dailyClaimed,
+    rank: getRank(state.bestScore),
+    bestScore: state.bestScore,
+    bestStreak: state.bestStreak,
     player: localPlayer() ? {
       x: +localPlayer().pos.x.toFixed(2),
       y: +localPlayer().pos.y.toFixed(2),
@@ -1090,6 +1436,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     } : null,
     enemiesRemaining: enemies.filter((enemy) => !enemy.dead).length,
     bullets: bullets.length,
+    peer: net.peer,
+    ready: net.ready,
   });
 
   window.advanceTime = (ms) => {

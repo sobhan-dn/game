@@ -60,3 +60,37 @@ Original prompt: یک بازی سه بعدی با سرور دائمی و دو ن
 
 - After GitHub connector deploy, verify the Render URL serves the updated English timed build and no longer logs missing texture 404s on Render.
 - Updated Render/GitHub deployment files through the GitHub connector: English compact `index.html`, iPhone compact `styles.css`, and `server.js` runtime patches for the deployed compact game bundle.
+
+## 2026-05-20 iPhone Role/Touch Check
+
+- Added a persistent browser `playerId` so the server only assigns Player 1 blue and Player 2 yellow to two different browser identities; duplicate connections from the same browser become spectators.
+- Extended the server runtime patch so the currently deployed compact bundle can also pass `playerId` through the WebSocket URL after deploy.
+- Verified the current Render URL with an iPhone 14 Playwright context: with a first desktop player already connected, the iPhone page joined as `p2`, showed the yellow player, and joystick drag moved the player by about 18 world units.
+- Verified the local updated build with an iPhone 14 Playwright context: second player joined as `p2`, yellow HUD/character rendered, joystick drag moved the player by about 16 world units, and no console/page errors were reported.
+
+## TODO
+
+- Push/deploy the local `game.js`, `index.html`, and `server.js` changes to GitHub/Render so the permanent URL gets the latest blue/yellow identity fix.
+
+## 2026-05-25 iPhone App Store Packaging
+
+- Added Capacitor 8 iOS packaging with bundle id `com.sobhandn.voidspheres` and scripts for `npm run build`, `npm run ios:sync`, and `npm run ios:open`.
+- Added a clean `dist/` web export pipeline and synced the web bundle into `ios/App/App/public` for the native WebView.
+- Updated the game runtime so native iOS (`voidspheres:` / `capacitor:`) connects to the hosted WebSocket server instead of trying `localhost`.
+- Tuned iPhone rendering: lower mobile pixel ratio cap, high-performance WebGL preference, mobile antialias reduction, safe-area sizing, disabled text callouts/tap highlights, and more compact portrait HUD.
+- Added native App Store readiness metadata: fullscreen iPhone target, hidden status bar, encryption export flag, and `PrivacyInfo.xcprivacy`.
+- Verified `npm run ios:sync`, `xcodebuild -resolvePackageDependencies`, and `xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' build`.
+- Installed and launched the built app on the iPhone 17 simulator and captured `output/web-game/native-ios-after-load.png`.
+- Verified two-client local gameplay with an iPhone Playwright context; Player 1 and Player 2 entered `playing`, `peer: true`, `ready: true`, with no console/page errors.
+
+## TODO
+
+- In Xcode, set the real Apple Developer Team/signing profile and archive a Release build for App Store Connect.
+- Confirm the hosted WebSocket URL `wss://maze-heli-command.onrender.com` is the production server you want before review.
+
+## 2026-05-20 Role Lock And Start Gate
+
+- Added a start gate: the match does not enter `playing` until both Player 1 blue and Player 2 yellow are online.
+- Added stable server role slots: a connected yellow player does not get promoted to blue if blue disconnects; a new different player fills the freed blue slot.
+- Tightened duplicate identity handling: a second connection with the same `playerId` is a spectator, not another blue/yellow controller.
+- Verified locally against the Render-target compact build: one-player start stayed in menu with `Waiting for second player`; two-player start entered playing; iPhone Player 2 joystick moved the yellow character while Player 1 stayed separate.
