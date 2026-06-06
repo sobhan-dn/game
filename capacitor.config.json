@@ -1,6 +1,6 @@
 {
-  "appId": "com.sobhandn.voidspheres",
-  "appName": "Void Spheres Duel",
+  "appId": "com.syd-sbn.voidspheres",
+  "appName": "Speedy jumper",
   "webDir": "dist",
   "server": {
     "iosScheme": "voidspheres"

@@ -5,8 +5,6 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const canvas = document.getElementById("game");
   const overlay = document.getElementById("overlay");
   const startButton = byId("start-button", "start");
-  const onlineModeButton = document.getElementById("online-mode");
-  const aiModeButton = document.getElementById("ai-mode");
   const overlayNote = byId("overlay-note");
   const p1HealthValue = byId("p1-health", "p1");
   const p2HealthValue = byId("p2-health", "p2");
@@ -345,7 +343,6 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function startGame() {
-    ensureAudio();
     if (mode.type === "ai") {
       if (state.ended) resetGame(false);
       net.role = "p1";
@@ -357,10 +354,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       state.started = true;
       state.message = "Solo match live";
       hideOverlay();
+      ensureAudio();
       playSweep(360, 780, 0.2, 0.08, "triangle");
       updateUi();
       return;
     }
+    ensureAudio();
     if (net.role === "pending") {
       state.message = "Connecting to server";
       showOverlay("Waiting", "Connecting to the online server...");
@@ -832,21 +831,23 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   function ensureAudio() {
     if (!AudioContextClass || audio.context) return;
-    const context = new AudioContextClass();
-    const master = context.createGain();
-    const music = context.createGain();
-    const sfx = context.createGain();
-    master.gain.value = 0.68;
-    music.gain.value = 0.16;
-    sfx.gain.value = 0.36;
-    music.connect(master);
-    sfx.connect(master);
-    master.connect(context.destination);
-    audio.context = context;
-    audio.master = master;
-    audio.music = music;
-    audio.sfx = sfx;
-    audio.nextBeat = context.currentTime + 0.08;
+    try {
+      const context = new AudioContextClass();
+      const master = context.createGain();
+      const music = context.createGain();
+      const sfx = context.createGain();
+      master.gain.value = 0.68;
+      music.gain.value = 0.16;
+      sfx.gain.value = 0.36;
+      music.connect(master);
+      sfx.connect(master);
+      master.connect(context.destination);
+      audio.context = context;
+      audio.master = master;
+      audio.music = music;
+      audio.sfx = sfx;
+      audio.nextBeat = context.currentTime + 0.08;
+    } catch {}
   }
 
   function updateMusic() {
@@ -1147,8 +1148,6 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   function setMode(nextMode) {
     if (mode.type === nextMode) return;
     mode.type = nextMode;
-    onlineModeButton?.classList.toggle("active", nextMode === "online");
-    aiModeButton?.classList.toggle("active", nextMode === "ai");
     if (nextMode === "ai") {
       net.role = "p1";
       net.ready = true;
@@ -1312,9 +1311,30 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   window.addEventListener("mouseup", () => {
     input.fire = false;
   });
-  startButton?.addEventListener("click", startGame);
-  onlineModeButton?.addEventListener("click", () => setMode("online"));
-  aiModeButton?.addEventListener("click", () => setMode("ai"));
+
+  const bindPress = (button, onPress, onRelease) => {
+    if (!button) return;
+    let lastTouchPressAt = 0;
+    button.addEventListener("click", (event) => {
+      if (performance.now() - lastTouchPressAt < 500) {
+        event.preventDefault();
+        return;
+      }
+      onPress(event);
+    });
+    button.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse") return;
+      event.preventDefault();
+      lastTouchPressAt = performance.now();
+      onPress(event);
+    });
+    if (!onRelease) return;
+    button.addEventListener("pointerup", onRelease);
+    button.addEventListener("pointercancel", onRelease);
+    button.addEventListener("pointerleave", onRelease);
+  };
+
+  bindPress(startButton, startGame);
 
   canvas.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" || event.clientX < innerWidth * 0.38) return;
@@ -1389,15 +1409,14 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     touchStick.addEventListener("touchend", resetTouchStick);
     touchStick.addEventListener("touchcancel", resetTouchStick);
   }
-  touchJump?.addEventListener("pointerdown", () => {
+  bindPress(touchJump, () => {
     input.jump = true;
     startGame();
   });
-  touchFire?.addEventListener("pointerdown", () => {
+  bindPress(touchFire, () => {
     input.fire = true;
     startGame();
-  });
-  touchFire?.addEventListener("pointerup", () => {
+  }, () => {
     input.fire = false;
   });
 

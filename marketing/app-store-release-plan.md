@@ -1,26 +1,26 @@
-# Void Spheres Duel App Store Release Plan
+# Speedy jumper App Store Release Plan
 
 ## Positioning
 
-Void Spheres Duel is positioned as a quick-session arena battler for players who want fast action without a long tutorial or heavy progression grind.
+Speedy jumper is positioned as a quick-session arena battler for players who want fast action without a long tutorial or heavy progression grind.
 
-Core hook: instant solo or online sphere battles with streaks, coins, daily targets, and best-score chasing in a neon 3D arena.
+Core hook: instant sphere battles with streaks, coins, daily targets, and best-score chasing in a neon 3D arena.
 
 ## App Store Listing
 
-- Name: Void Spheres Duel
-- Subtitle: Online or solo sphere battles
+- Name: Speedy jumper
+- Subtitle: Fast sphere jumping battles
 - Category: Games
 - Suggested subcategory: Action
 - Age rating direction: Complete Apple's questionnaire based on final violence/combat answers.
-- Bundle ID: `com.sobhandn.voidspheres`
+- Bundle ID: `com.syd-sbn.voidspheres`
 - Encryption: non-exempt encryption disabled in `Info.plist`
 
 ## Screenshot Set
 
 Create screenshots for these moments:
 
-1. Mode select showing Online Duel and Solo vs AI.
+1. Startup screen with instant match call to action.
 2. Mid-air jump with projectiles crossing the arena.
 3. Enemy pressure with the score visible.
 4. Streak bonus, coins, or daily-target moment.
@@ -38,7 +38,7 @@ Recommended App Store Connect sizes:
 - Day -5: post the app icon and a short "challenge a friend" hook.
 - Day -3: post a carousel with three mechanics: jump, shoot, survive.
 - Day -1: publish the App Store pre-order or launch reminder link.
-- Launch day: push one direct call to action: "Download Void Spheres Duel and win your first duel."
+- Launch day: push one direct call to action: "Download Speedy jumper and win your first duel."
 - Day +2: post a short clip showing the highest-score moment from testing.
 - Day +7: ask early players for reviews after a clean win/rematch session.
 
@@ -46,7 +46,7 @@ Recommended App Store Connect sizes:
 
 Run a small creative test before scaling:
 
-- Audience: mobile action game players, multiplayer game interests.
+- Audience: mobile action game players, arcade action interests.
 - Creatives: app icon, 10-second gameplay clip, 3-screenshot carousel.
 - Primary metric: App Store product page conversion rate.
 - Kill rule: pause any creative under 2% click-through rate after enough impressions.
@@ -56,7 +56,7 @@ Run a small creative test before scaling:
 
 Use the subtitle and first two description lines to sell the loop immediately:
 
-Online or solo sphere battles. Jump, shoot, survive, and chase streak bonuses across floating neon arenas.
+Jump, shoot, survive, and chase streak bonuses across floating neon arenas.
 
 Secondary retention line:
 
@@ -64,7 +64,7 @@ Earn coins, complete the daily target, and come back to beat your best score.
 
 Keywords to test over time:
 
-duel, arena, action, shooter, platformer, online, ai, offline, 2 player, multiplayer, neon, 3D, battle
+jumper, arena, action, shooter, platformer, ai, offline, coins, streak, neon, 3D, battle
 
 ## Monetization Roadmap
 

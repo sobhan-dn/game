@@ -1,1 +1,1 @@
-Initial App Store release with Solo vs AI, online duels, mobile touch controls, 3D floating arenas, shooting, enemies, streak bonuses, coins, daily targets, scoring, and quick restarts.
+Initial App Store release with instant AI battles, mobile touch controls, 3D floating arenas, shooting, enemies, streak bonuses, coins, daily targets, scoring, and quick restarts.

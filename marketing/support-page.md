@@ -1,12 +1,8 @@
-# Void Spheres Duel Support
+# Speedy jumper Support
 
-For support with Void Spheres Duel, contact the developer through the public support channel listed on the App Store page.
+For support with Speedy jumper, contact the developer through the public support channel listed on the App Store page.
 
 ## Common Questions
-
-### The online match is waiting for another player
-
-Online Duel requires two different players to be connected. Use Solo vs AI for an instant match.
 
 ### The game feels hard
 

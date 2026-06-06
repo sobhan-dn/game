@@ -46,7 +46,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Void Spheres running at http://localhost:${PORT}`);
+  console.log(`Speedy jumper running at http://localhost:${PORT}`);
 });
 
 const wss = new WebSocketServer({ server });

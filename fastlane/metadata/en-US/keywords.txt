@@ -1,1 +1,1 @@
-duel,arena,action,shooter,score,online,ai,offline,coins,streak,multiplayer,neon,3D
+jumper,arena,action,shooter,score,ai,offline,coins,streak,neon,3D

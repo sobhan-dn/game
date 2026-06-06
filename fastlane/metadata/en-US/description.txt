@@ -1,10 +1,9 @@
-Void Spheres Duel is a fast action platformer set on floating neon spheres.
+Speedy jumper is a fast action platformer set on floating neon spheres.
 
-Jump between platforms, fire at your opponent, survive enemy pressure, collect coins, and chase your best score in short, intense matches designed for mobile play. Start instantly in Solo vs AI or fight another player online.
+Jump between platforms, fire at your opponent, survive enemy pressure, collect coins, and chase your best score in short, intense matches designed for mobile play. Start instantly against a moving AI rival.
 
 Features:
-- Instant Solo vs AI battles
-- Real-time two-player duels
+- Instant AI battles
 - Floating 3D arena built with smooth Three.js visuals
 - Touch controls tuned for phone play
 - Shooting, jumping, enemies, damage, streak bonuses, scoring, and instant restarts
