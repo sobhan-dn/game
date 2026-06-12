@@ -1,1 +1,1 @@
-jumper,arena,action,shooter,score,ai,offline,coins,streak,neon,3D
+jumper,arena,action,shooter,rift,surge,shards,offline,ai,coins,streak,neon,3D

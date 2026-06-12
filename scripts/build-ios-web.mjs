@@ -13,7 +13,7 @@ const copyFileOrDir = async (from, to) => {
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 
-for (const item of ["index.html", "styles.css", "assets"]) {
+for (const item of ["index.html", "styles.css", "support.html", "privacy.html", "privacy-policy.html", "assets"]) {
   await copyFileOrDir(path.join(root, item), path.join(outDir, item));
 }
 

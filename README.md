@@ -28,7 +28,7 @@ In Xcode, select the `App` scheme, set your Apple Developer Team, then archive f
 - Draft privacy/support pages: `marketing/privacy-policy.md` and `marketing/support-page.md`
 - App Review notes: `marketing/review-notes.txt`
 
-Before submission, replace the TODO support and marketing URLs with real public links.
+Before submission, publish the Render service and confirm the support and marketing URLs are live.
 
 ## Deploy
 

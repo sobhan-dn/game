@@ -1,7 +1,13 @@
 Speedy jumper can be played without an account.
 
+This build was updated after a Guideline 4.3(a) review message. It is not a reskin of the earlier project: the submitted game has its own Speedy jumper identity, 3D spherical arena traversal, two-minute scoring rules, red-unit pressure, persistent streak/coin/daily progress, and a Rift Shard / Rift Surge mechanic. Reviewers can see the mechanic in Solo vs AI by collecting the floating teal shards until the Rift meter reaches 100%, then tapping SURGE.
+
 To test:
 1. Launch the app.
-2. Tap Start Match.
-3. Use the left touch stick to move, the Jump button to jump, and the Fire button to shoot.
-4. Score points to see coins, streaks, best score, and daily target progress update.
+2. Select Solo vs AI.
+3. Tap Start Match.
+4. Use the left touch stick to move, the Jump button to jump, and the Fire button to shoot.
+5. Collect four teal Rift Shards, then tap SURGE to trigger the area burst.
+6. Score points to see coins, streaks, best score, and daily target progress update.
+
+Online Duel requires two separate clients. If no second player is available, use Solo vs AI for immediate gameplay review.

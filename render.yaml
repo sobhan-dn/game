@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: maze-heli-command
+    name: speedy-jumper
     runtime: node
     plan: free
     buildCommand: npm install

@@ -4,12 +4,12 @@
 
 Speedy jumper is positioned as a quick-session arena battler for players who want fast action without a long tutorial or heavy progression grind.
 
-Core hook: instant sphere battles with streaks, coins, daily targets, and best-score chasing in a neon 3D arena.
+Core hook: instant sphere battles with Rift Shards, Surge bursts, streaks, coins, daily targets, and best-score chasing in a neon 3D arena.
 
 ## App Store Listing
 
 - Name: Speedy jumper
-- Subtitle: Fast sphere jumping battles
+- Subtitle: Fast Rift Arena Battles
 - Category: Games
 - Suggested subcategory: Action
 - Age rating direction: Complete Apple's questionnaire based on final violence/combat answers.
@@ -18,13 +18,13 @@ Core hook: instant sphere battles with streaks, coins, daily targets, and best-s
 
 ## Screenshot Set
 
-Create screenshots for these moments:
+Ready screenshots are in `marketing/app-store-screenshots/`:
 
-1. Startup screen with instant match call to action.
-2. Mid-air jump with projectiles crossing the arena.
-3. Enemy pressure with the score visible.
-4. Streak bonus, coins, or daily-target moment.
-5. Restart/rematch state after a duel ends.
+1. `01-mode-select.png` - Mode select showing Online Duel and Solo vs AI.
+2. `02-live-arena.png` - Main neon sphere arena with the duel hook.
+3. `03-aim-fire.png` - Touch-control aiming and firing.
+4. `04-streak-coins.png` - Streak, coin, and daily-target hook.
+5. `05-two-minute-score.png` - Two-minute score battle hook.
 
 Recommended App Store Connect sizes:
 
@@ -56,15 +56,15 @@ Run a small creative test before scaling:
 
 Use the subtitle and first two description lines to sell the loop immediately:
 
-Jump, shoot, survive, and chase streak bonuses across floating neon arenas.
+Solo sphere battles with optional online duels. Jump, collect Rift Shards, trigger Surge bursts, and chase streak bonuses across floating neon arenas.
 
 Secondary retention line:
 
-Earn coins, complete the daily target, and come back to beat your best score.
+Earn coins, complete the daily target, and come back to beat your best score and fastest Surge routes.
 
 Keywords to test over time:
 
-jumper, arena, action, shooter, platformer, ai, offline, coins, streak, neon, 3D, battle
+jumper, arena, action, shooter, platformer, rift, surge, shards, ai, offline, neon, 3D, battle
 
 ## Monetization Roadmap
 
@@ -86,6 +86,7 @@ Add ads only after the game has stable Day-1 retention. If retention is weak, ad
 4. Archive with Release configuration.
 5. Upload the archive to App Store Connect.
 6. Create the app record and paste the metadata from `fastlane/metadata/en-US`.
-7. Replace TODO support/marketing URLs with real public URLs.
+7. Confirm `https://speedy-jumper.onrender.com/` and `/support.html` are live before submission.
 8. Add final screenshots and privacy answers.
-9. Submit for App Review.
+9. Paste `marketing/review-notes.txt` into App Review Notes so Apple can test the unique Rift Shard / Rift Surge loop.
+10. Submit for App Review.

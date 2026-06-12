@@ -298,14 +298,16 @@ body {
 
 .streak-panel strong,
 .progress-panel strong,
-.mission-panel strong {
+.mission-panel strong,
+.surge-panel strong {
   color: #fff5d6;
   text-shadow: 0 0 18px rgba(255, 189, 87, 0.52);
 }
 
 .streak-panel small,
 .progress-panel small,
-.mission-panel small {
+.mission-panel small,
+.surge-panel small {
   display: block;
   margin-top: 4px;
   color: var(--muted);
@@ -315,13 +317,19 @@ body {
 }
 
 .progress-panel,
-.mission-panel {
+.mission-panel,
+.surge-panel {
   min-width: 126px;
 }
 
 .mission-panel strong {
   color: #b8fff4;
   text-shadow: 0 0 18px rgba(111, 247, 221, 0.48);
+}
+
+.surge-panel strong {
+  color: #f1fffd;
+  text-shadow: 0 0 18px rgba(111, 247, 221, 0.62);
 }
 
 #crosshair {
@@ -436,6 +444,25 @@ body {
   background:
     radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.2), transparent 32%),
     rgba(73, 15, 18, 0.78);
+}
+
+.touch-button.surge {
+  grid-column: span 2;
+  width: 164px;
+  height: 56px;
+  border-radius: 8px;
+  color: #eafffb;
+  border-color: rgba(111, 247, 221, 0.44);
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.22), transparent 32%),
+    rgba(8, 45, 45, 0.78);
+}
+
+.touch-button.surge.ready,
+body.rift-active .touch-button.surge {
+  box-shadow:
+    0 0 0 1px rgba(111, 247, 221, 0.22),
+    0 0 30px rgba(111, 247, 221, 0.42);
 }
 
 .touch-button:active,
@@ -573,6 +600,12 @@ body.overlay-open #crosshair {
 
 body.target-locked #crosshair {
   transform: translate(-50%, -50%) scale(1.08);
+}
+
+body.rift-active #crosshair span::before,
+body.rift-active #crosshair span::after {
+  background: rgba(111, 247, 221, 0.98);
+  box-shadow: 0 0 22px rgba(111, 247, 221, 0.9);
 }
 
 body.target-locked #crosshair span::before,
@@ -800,6 +833,11 @@ body.target-locked #crosshair span:last-child::after {
     height: 68px;
     font-size: 0.68rem;
     font-weight: 700;
+  }
+
+  .touch-button.surge {
+    width: 176px;
+    height: 52px;
   }
 
   .card {

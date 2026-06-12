@@ -19,6 +19,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const rankValue = document.getElementById("rank");
   const dailyMissionValue = document.getElementById("daily-mission");
   const dailyRewardValue = document.getElementById("daily-reward");
+  const riftChargeValue = document.getElementById("rift-charge");
+  const riftStateValue = document.getElementById("rift-state");
   const enemiesValue = document.getElementById("enemies");
   const timerValue = document.getElementById("timer");
   const statusValue = document.getElementById("status");
@@ -27,6 +29,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const touchStick = document.getElementById("touch-stick");
   const touchStickKnob = document.getElementById("touch-stick-knob");
   const touchJump = document.getElementById("touch-jump");
+  const touchSurge = document.getElementById("touch-surge");
   const touchFire = document.getElementById("touch-fire");
 
   const isNativeIos = location.protocol === "voidspheres:" || location.protocol === "capacitor:";
@@ -68,13 +71,17 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     nextEnemySpawn: 0,
     streak: 0,
     streakTimer: 0,
-    bestStreak: readNumber("void-spheres-best-streak"),
-    bestScore: readNumber("void-spheres-best-score"),
-    coins: readNumber("void-spheres-coins"),
+    bestStreak: readNumber("speedy-jumper-best-streak"),
+    bestScore: readNumber("speedy-jumper-best-score"),
+    coins: readNumber("speedy-jumper-coins"),
     matchCoins: 0,
     dailyTarget: 12,
     dailyProgress: readDailyProgress(),
-    dailyClaimed: readTodayFlag("void-spheres-daily-claimed"),
+    dailyClaimed: readTodayFlag("speedy-jumper-daily-claimed"),
+    riftCharge: 0,
+    riftActive: false,
+    riftTimer: 0,
+    nextShardSpawn: 0,
   };
   const scores = { p1: 0, p2: 0 };
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -85,6 +92,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     p2: makePlayer("p2", "Player 2", 0xffbd57, 0xff8a25),
   };
   const platforms = [];
+  const riftShards = [];
+  const surgeWaves = [];
   const enemies = [];
   const bullets = [];
   const effects = [];
@@ -101,6 +110,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     KeyD: "r",
     ArrowRight: "r",
   };
+  const shardSlots = [
+    [1, 0.34, 0.7],
+    [2, -0.28, 2.8],
+    [4, 0.18, 4.3],
+    [6, -0.18, 5.5],
+  ];
 
   const textureSpecs = [
     ["./assets/textures/sphere-ice.png", "ice"],
@@ -207,8 +222,12 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function resetGame(broadcast = false) {
-    for (const item of [...platforms, ...enemies, ...bullets, ...effects]) root.remove(item.mesh || item.group);
+    for (const item of [...platforms, ...riftShards, ...surgeWaves, ...enemies, ...bullets, ...effects]) {
+      root.remove(item.mesh || item.group);
+    }
     platforms.length = 0;
+    riftShards.length = 0;
+    surgeWaves.length = 0;
     enemies.length = 0;
     bullets.length = 0;
     effects.length = 0;
@@ -217,15 +236,21 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     state.streak = 0;
     state.streakTimer = 0;
     state.matchCoins = 0;
+    state.riftCharge = 0;
+    state.riftActive = false;
+    state.riftTimer = 0;
+    state.nextShardSpawn = 0;
     state.dailyProgress = readDailyProgress();
-    state.dailyClaimed = readTodayFlag("void-spheres-daily-claimed");
+    state.dailyClaimed = readTodayFlag("speedy-jumper-daily-claimed");
     state.started = false;
     state.ended = false;
     state.message = "Tap Start";
     state.timeLeft = roundSeconds;
     state.nextEnemySpawn = 0;
     document.body.classList.remove("game-over", "target-locked");
+    document.body.classList.remove("rift-active");
     createPlatforms();
+    createRiftShards();
     placePlayer(players.p1, platforms[0], new THREE.Vector3(0, 1, 0));
     placePlayer(players.p2, platforms[0], new THREE.Vector3(0.45, 0.88, 0.12).normalize());
     players.p2.label = mode.type === "ai" ? "AI Rival" : "Player 2";
@@ -286,6 +311,52 @@ import * as THREE from "./node_modules/three/build/three.module.js";
         ring,
         mat,
       });
+    });
+  }
+
+  function createRiftShards() {
+    for (const [platformIndex, lat, lon] of shardSlots) {
+      spawnRiftShard(platformIndex, lat, lon);
+    }
+  }
+
+  function spawnRiftShard(
+    platformIndex = 1 + Math.floor(Math.random() * Math.max(1, platforms.length - 1)),
+    lat = Math.random() * 0.8 - 0.4,
+    lon = Math.random() * Math.PI * 2
+  ) {
+    const group = new THREE.Group();
+    const core = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.62, 1),
+      new THREE.MeshStandardMaterial({
+        color: 0xdffcff,
+        emissive: 0x64fff1,
+        emissiveIntensity: 0.86,
+        roughness: 0.18,
+        metalness: 0.48,
+      })
+    );
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.92, 0.045, 10, 42),
+      new THREE.MeshBasicMaterial({ color: 0x6ff7dd, transparent: true, opacity: 0.72 })
+    );
+    const halo = new THREE.Mesh(
+      new THREE.SphereGeometry(1.1, 18, 18),
+      new THREE.MeshBasicMaterial({ color: 0x6ff7dd, transparent: true, opacity: 0.14 })
+    );
+    group.add(core, ring, halo);
+    root.add(group);
+    riftShards.push({
+      group,
+      mesh: group,
+      core,
+      ring,
+      platform: platforms[platformIndex % platforms.length],
+      lat,
+      lon,
+      phase: Math.random() * Math.PI * 2,
+      pos: new THREE.Vector3(),
+      up: new THREE.Vector3(0, 1, 0),
     });
   }
 
@@ -421,6 +492,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       } else {
         updateRemotePlayer(remotePlayer(), dt);
       }
+      updateRiftShards(dt);
+      updateRiftSurge(dt);
       updateEnemies(dt);
       updateEnemySpawns(dt);
       updateBullets(dt);
@@ -428,6 +501,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     }
     state.streakTimer = Math.max(0, state.streakTimer - dt);
     if (state.streakTimer <= 0) state.streak = 0;
+    updateSurgeWaves(dt);
     updateEffects(dt);
     updateMusic();
     updateCamera(dt);
@@ -457,8 +531,9 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
     const normalSpeed = player.vel.dot(player.up);
     const tangent = player.vel.clone().sub(player.up.clone().multiplyScalar(normalSpeed));
-    tangent.addScaledVector(move, (player.grounded ? 70 : 24) * dt);
-    if (tangent.length() > 24) tangent.setLength(24);
+    const surgeBoost = state.riftActive && player.id === net.role ? 1.22 : 1;
+    tangent.addScaledVector(move, (player.grounded ? 70 : 24) * dt * surgeBoost);
+    if (tangent.length() > 24 * surgeBoost) tangent.setLength(24 * surgeBoost);
     if (player.grounded) tangent.multiplyScalar(Math.exp(-2.7 * dt));
     player.vel.copy(tangent).addScaledVector(player.up, normalSpeed);
 
@@ -604,6 +679,114 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     }
   }
 
+  function updateRiftShards(dt) {
+    const local = localPlayer();
+    for (let i = riftShards.length - 1; i >= 0; i -= 1) {
+      const shard = riftShards[i];
+      shard.lon += dt * 0.18;
+      const normal = spherical(shard.lat + Math.sin(clock.elapsedTime * 0.8 + shard.phase) * 0.08, shard.lon);
+      shard.up.copy(normal);
+      shard.pos.copy(shard.platform.center).addScaledVector(normal, shard.platform.radius + 1.42);
+      shard.group.position.copy(shard.pos);
+      shard.group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+      shard.core.rotation.y += dt * 2.4;
+      shard.ring.rotation.x += dt * 1.9;
+      shard.ring.rotation.z -= dt * 1.2;
+      shard.group.scale.setScalar(1 + Math.sin(clock.elapsedTime * 4 + shard.phase) * 0.08);
+      if (local && local.alive && local.pos.distanceTo(shard.pos) < 1.9) {
+        collectRiftShard(i);
+      }
+    }
+
+    state.nextShardSpawn = Math.max(0, state.nextShardSpawn - dt);
+    if (riftShards.length < 4 && state.nextShardSpawn <= 0) {
+      spawnRiftShard();
+      state.nextShardSpawn = 2.4 + Math.random() * 1.8;
+    }
+  }
+
+  function collectRiftShard(index) {
+    const shard = riftShards[index];
+    if (!shard) return;
+    root.remove(shard.group);
+    riftShards.splice(index, 1);
+    addRiftCharge(25);
+    awardCoins(1, false);
+    state.message = state.riftCharge >= 100 ? "Rift Surge ready" : `Rift shard collected: ${state.riftCharge}%`;
+    spawnEffect(shard.pos, 0x6ff7dd, 0.55);
+    playSweep(640, 1180, 0.16, 0.055, "triangle");
+    pulseDevice(12);
+  }
+
+  function addRiftCharge(amount) {
+    state.riftCharge = THREE.MathUtils.clamp(Math.floor(state.riftCharge + amount), 0, 100);
+  }
+
+  function updateRiftSurge(dt) {
+    if (!state.riftActive) return;
+    state.riftTimer = Math.max(0, state.riftTimer - dt);
+    if (state.riftTimer <= 0) {
+      state.riftActive = false;
+      document.body.classList.remove("rift-active");
+      state.message = "Rift Surge ended";
+    }
+  }
+
+  function activateRiftSurge() {
+    const local = localPlayer();
+    if (!local || !state.started || state.ended || state.riftActive || state.riftCharge < 100) return;
+    state.riftCharge = 0;
+    state.riftActive = true;
+    state.riftTimer = 7;
+    document.body.classList.add("rift-active");
+    state.message = "Rift Surge active";
+    spawnSurgeWave(local.pos, 0x6ff7dd);
+    playSweep(220, 1380, 0.35, 0.08, "sawtooth");
+    pulseDevice(26);
+
+    let cleared = 0;
+    for (let i = 0; i < enemies.length; i += 1) {
+      const enemy = enemies[i];
+      if (!enemy.dead && enemy.pos.distanceTo(local.pos) < 42) {
+        enemy.dead = true;
+        root.remove(enemy.mesh);
+        addScore(local.id, 1, "Rift surge");
+        cleared += 1;
+        if (mode.type === "online") send({ type: "enemy-down", index: i, scorer: local.id });
+      }
+    }
+    if (mode.type === "ai" && players.p2.alive && players.p2.pos.distanceTo(local.pos) < 24) {
+      damagePlayer(players.p2, 30, local.id);
+    }
+    if (cleared > 0) state.message = `Rift Surge cleared ${cleared} red unit${cleared === 1 ? "" : "s"}`;
+  }
+
+  function spawnSurgeWave(pos, color) {
+    const mesh = new THREE.Mesh(
+      new THREE.TorusGeometry(1, 0.07, 12, 96),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.82 })
+    );
+    mesh.position.copy(pos);
+    mesh.rotation.x = Math.PI / 2;
+    root.add(mesh);
+    surgeWaves.push({ mesh, life: 0.64, maxLife: 0.64 });
+  }
+
+  function updateSurgeWaves(dt) {
+    for (let i = surgeWaves.length - 1; i >= 0; i -= 1) {
+      const wave = surgeWaves[i];
+      wave.life -= dt;
+      const progress = 1 - wave.life / wave.maxLife;
+      const scale = 1 + progress * 38;
+      wave.mesh.scale.set(scale, scale, scale);
+      wave.mesh.material.opacity = Math.max(0, 0.82 * (1 - progress));
+      if (wave.life <= 0) {
+        root.remove(wave.mesh);
+        surgeWaves.splice(i, 1);
+      }
+    }
+  }
+
   function updateEnemies(dt) {
     for (let i = 0; i < enemies.length; i += 1) {
       const enemy = enemies[i];
@@ -686,7 +869,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     const crosshairPoint = camera.position.clone().addScaledVector(crosshairDirection, 90);
     const direction = forcedDirection ? forcedDirection.clone().normalize() : crosshairPoint.sub(muzzle).normalize();
     shoot(muzzle, direction, 72, player.id, player.bulletColor);
-    player.cooldown = 0.15;
+    player.cooldown = state.riftActive && player.id === net.role ? 0.09 : 0.15;
     playSweep(player.id === "p2" ? 380 : 460, 170, 0.08, 0.045, "square");
     if (mode.type === "online") send({ type: "shot", origin: pack(muzzle), direction: pack(direction), color: player.bulletColor });
   }
@@ -729,7 +912,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       state.streak += 1;
       state.streakTimer = 3.5;
       state.bestStreak = Math.max(state.bestStreak, state.streak);
-      writeNumber("void-spheres-best-streak", state.bestStreak);
+      writeNumber("speedy-jumper-best-streak", state.bestStreak);
       state.dailyProgress = Math.min(state.dailyTarget, state.dailyProgress + amount);
       writeDailyProgress(state.dailyProgress);
     } else {
@@ -743,7 +926,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       awardCoins(coinGain, false);
       if (!state.dailyClaimed && state.dailyProgress >= state.dailyTarget) {
         state.dailyClaimed = true;
-        writeTodayFlag("void-spheres-daily-claimed", true);
+        writeTodayFlag("speedy-jumper-daily-claimed", true);
         awardCoins(25, true);
         state.message = `Daily target complete: +25 coins`;
         playSweep(580, 1280, 0.22, 0.07, "triangle");
@@ -751,7 +934,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     }
     if (localScored && scores[owner] > state.bestScore) {
       state.bestScore = scores[owner];
-      writeNumber("void-spheres-best-score", state.bestScore);
+      writeNumber("speedy-jumper-best-score", state.bestScore);
     }
     if (bonus > 0) {
       state.message = `${reason}: x${state.streak} streak bonus +${bonus}`;
@@ -762,7 +945,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   function awardCoins(amount, announce) {
     state.coins += amount;
     state.matchCoins += amount;
-    writeNumber("void-spheres-coins", state.coins);
+    writeNumber("speedy-jumper-coins", state.coins);
     if (announce) pulseDevice(20);
   }
 
@@ -775,7 +958,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (state.bestStreak >= 8) awardCoins(5, true);
     if (scores[net.role] > state.bestScore) {
       state.bestScore = scores[net.role];
-      writeNumber("void-spheres-best-score", state.bestScore);
+      writeNumber("speedy-jumper-best-score", state.bestScore);
     }
     state.message = `${reason} ${winner}. Final ${scores.p1}-${scores.p2}. +${state.matchCoins} coins. Best ${state.bestScore}.`;
     showOverlay("Play Again", state.message);
@@ -911,7 +1094,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function connectOnline() {
-    const hostedWsUrl = "wss://maze-heli-command.onrender.com";
+    const hostedWsUrl = "wss://speedy-jumper.onrender.com";
     const baseWsUrl = location.protocol === "file:"
       || isNativeIos
       ? hostedWsUrl
@@ -1028,7 +1211,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function getPlayerId() {
-    const key = "void-spheres-player-id";
+    const key = "speedy-jumper-player-id";
     const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     try {
       const existing = localStorage.getItem(key);
@@ -1061,7 +1244,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   function readDailyProgress() {
     try {
-      const raw = JSON.parse(localStorage.getItem("void-spheres-daily-progress") || "{}");
+      const raw = JSON.parse(localStorage.getItem("speedy-jumper-daily-progress") || "{}");
       return raw.date === todayKey() ? Number(raw.value || 0) : 0;
     } catch {
       return 0;
@@ -1070,7 +1253,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 
   function writeDailyProgress(value) {
     try {
-      localStorage.setItem("void-spheres-daily-progress", JSON.stringify({ date: todayKey(), value }));
+      localStorage.setItem("speedy-jumper-daily-progress", JSON.stringify({ date: todayKey(), value }));
     } catch {}
   }
 
@@ -1108,6 +1291,16 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     if (rankValue) rankValue.textContent = getRank(state.bestScore);
     if (dailyMissionValue) dailyMissionValue.textContent = state.dailyClaimed ? "DONE" : `${state.dailyProgress}/${state.dailyTarget}`;
     if (dailyRewardValue) dailyRewardValue.textContent = state.dailyClaimed ? "COME BACK TOMORROW" : "+25 COINS";
+    if (riftChargeValue) riftChargeValue.textContent = state.riftActive ? `${Math.ceil(state.riftTimer)}s` : `${state.riftCharge}%`;
+    if (riftStateValue) {
+      riftStateValue.textContent = state.riftActive
+        ? "SURGE ACTIVE"
+        : state.riftCharge >= 100
+          ? "TAP SURGE"
+          : "COLLECT SHARDS";
+    }
+    touchSurge?.classList.toggle("active", state.riftActive);
+    touchSurge?.classList.toggle("ready", !state.riftActive && state.riftCharge >= 100);
     if (enemiesValue) enemiesValue.textContent = enemies.filter((enemy) => !enemy.dead).length;
     if (timerValue) timerValue.textContent = formatTime(state.timeLeft);
     const roleText = mode.type === "ai" ? "Solo vs AI" : net.role === "pending" ? "Connecting" : net.role === "spectator" ? "Spectator" : net.role === "p2" ? "Player 2" : "Player 1";
@@ -1286,6 +1479,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       input.jump = true;
       event.preventDefault();
     }
+    if (event.code === "KeyE") activateRiftSurge();
     if (event.code === "Enter") input.fire = true;
   });
 
@@ -1413,6 +1607,10 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     input.jump = true;
     startGame();
   });
+  bindPress(touchSurge, () => {
+    startGame();
+    activateRiftSurge();
+  });
   bindPress(touchFire, () => {
     input.fire = true;
     startGame();
@@ -1441,6 +1639,9 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     streak: state.streak,
     coins: state.coins,
     matchCoins: state.matchCoins,
+    riftCharge: state.riftCharge,
+    riftActive: state.riftActive,
+    riftShards: riftShards.length,
     dailyProgress: state.dailyProgress,
     dailyClaimed: state.dailyClaimed,
     rank: getRank(state.bestScore),

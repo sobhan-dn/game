@@ -1,13 +1,17 @@
-Speedy jumper is a fast action platformer set on floating neon spheres.
+Speedy jumper is a fast 3D arena battler built for quick mobile matches.
 
-Jump between platforms, fire at your opponent, survive enemy pressure, collect coins, and chase your best score in short, intense matches designed for mobile play. Start instantly against a moving AI rival.
+Jump across floating neon spheres, collect Rift Shards, aim through the crosshair, fire at your rival, and survive the pressure from red enemy units. Every match lasts two minutes, so every hit, dodge, surge burst, streak, and coin reward matters.
 
-Features:
-- Instant AI battles
-- Floating 3D arena built with smooth Three.js visuals
+Play instantly in Solo vs AI, or switch to Online Duel and fight another player in real time. The controls are simple to learn on iPhone: use the left stick to move, drag to aim, then jump and fire with quick touch buttons.
+
+Why you will keep coming back:
+- Fast two-minute arena battles
+- Instant Solo vs AI mode
+- Real-time online duels
+- Floating 3D neon spheres with smooth action
+- Rift Shards and Rift Surge bursts that change the flow of each round
 - Touch controls tuned for phone play
-- Shooting, jumping, enemies, damage, streak bonuses, scoring, and instant restarts
-- Coins, daily score targets, local best score, and best streak tracking
-- Quick sessions that are easy to start and hard to master
+- Jumping, shooting, enemy pressure, health, scoring, and instant restarts
+- Streak bonuses, coins, daily targets, best score, and best streak tracking
 
-Every match is about movement, timing, and pressure. Stay alive, control the arena, and make every shot count.
+Move fast, control the arena, and make every shot count.
