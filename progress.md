@@ -10,7 +10,7 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 
 - Current prompt: remove every online feature, prepare the complete project so `mehranabi` can ship it to the App Store, and publish the finished work to the owner's GitHub account.
 - Chosen product direction: a fully offline, single-player premium-feeling arena with one human cat, one adaptive AI rival, and coordinated hostile combat cats. Internal `p1`/`p2` actor IDs stay for low-risk gameplay compatibility; all visible labels use YOU / AI.
-- GitHub repository access was verified for `sobhan-dn/game`; collaborator `mehranabi` already has write permission. Work continues on `codex/solo-app-store-release` before a reviewed handoff pull request.
+- GitHub repository access was verified for `sobhan-dn/game`; collaborator `mehranabi` already has write permission. Work was published on `codex/solo-app-store-release` for a reviewed handoff.
 - Removed the Online Duel selector, WebSocket client, hosted relay URL, random player identifier, role/spectator/presence state, remote interpolation, network message handlers, WebSocket server, `ws` dependency, and the obsolete two-client QA. The Node server is now static-only.
 - Reframed the complete interface as YOU vs TACTICAL AI while preserving internal `p1`/`p2` actor IDs for safe combat compatibility. The adaptive AI rival, hostile targeting, projectiles, parries, scores, respawns, and Rift Surge all remain fully functional in solo play.
 - Added `qa:solo-only`, which passed on HTTP and direct `file://` launch with an active/moving AI rival, zero WebSocket events, zero post-load gameplay requests, no legacy role/peer/ready telemetry, and no browser errors.
@@ -19,7 +19,7 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 - Re-captured all five App Store screenshots directly from the live 430×932@3x mobile build at the required 1290×2796 size. The Solo menu, live arena, fire, Phase Dash, and planet-to-planet jump screenshots were visually inspected; a reproducible `capture:app-store` script and report were added.
 - Added a GitHub Pages workflow that builds the standalone `dist` site from Node 22 after changes land on `master`; fastlane marketing/support/privacy URLs now point to the repository Pages site. Pages still needs to be enabled with GitHub Actions after the PR is merged.
 - Final verification passed: all JS/MJS syntax checks, `git diff --check`, zero-vulnerability `npm audit`, desktop and mobile Solar Cats QA, deterministic combat balance (`[0,0,0]` idle deaths versus `[3,4,5]` baseline), Phase Parry, Earth→Mars long-jump transfer, standalone build, Capacitor iOS sync, and a Release iOS Simulator Xcode build with store validation.
-- TODO: publish the verified branch and draft PR, request `mehranabi` as reviewer, then enable GitHub Pages after merge so the App Store URLs become live.
+- Published commit `5a560a0` to GitHub, opened draft PR `sobhan-dn/game#1`, and requested `mehranabi` as reviewer. TODO after merge: enable GitHub Pages with GitHub Actions and confirm the three App Store URLs return HTTP 200 before submission.
 
 ## 2026-08-02 Adaptive Combat Overhaul (complete)
 
