@@ -1,22 +1,31 @@
 {
-  "name": "speedy-jumper",
-  "version": "1.0.1",
+  "name": "void-spheres-riftbound",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "prestart": "npm run build",
     "start": "node server.js",
     "build": "node scripts/build-ios-web.mjs",
+    "qa:solar-cats": "node scripts/qa-solar-cats.mjs",
+    "qa:solar-cats-mobile": "node scripts/qa-solar-cats-mobile.mjs",
+    "qa:solo-only": "node scripts/qa-solo-only.mjs",
+    "qa:combat-balance": "node scripts/qa-combat-balance.mjs",
+    "qa:long-jump": "node scripts/qa-long-jump.mjs",
+    "capture:app-store": "node scripts/capture-app-store.mjs",
     "ios:sync": "npm run build && npx cap sync ios",
     "ios:open": "npm run ios:sync && npx cap open ios"
   },
   "dependencies": {
-    "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
     "@capacitor/ios": "^8.3.4",
-    "three": "^0.184.0",
-    "ws": "^8.20.1"
+    "three": "^0.184.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
     "esbuild": "^0.28.0",
     "playwright": "^1.44.1"
   }

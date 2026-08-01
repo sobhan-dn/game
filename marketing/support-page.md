@@ -1,6 +1,6 @@
-# Speedy jumper Support
+# Void Spheres: Riftbound Support
 
-For support with Speedy jumper, use the public support page published with the game site or contact the developer through the App Store product page.
+For support with Void Spheres: Riftbound, use the public support page published with the game site or contact the developer through the App Store product page. The game itself is fully offline and single-player.
 
 ## Common Questions
 
@@ -14,4 +14,4 @@ Sound starts after the first tap because mobile browsers and iOS apps require us
 
 ## App Store Review
 
-Solo vs AI is available without an account and is the fastest way to verify movement, shooting, Rift Shards, Surge, coins, streaks, and daily progress.
+The Solo vs AI match starts without an account or internet connection and lets reviewers verify movement, shooting, Rift Shards, Surge, coins, streaks, and daily progress.

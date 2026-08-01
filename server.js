@@ -1,12 +1,13 @@
 import http from "node:http";
-import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { WebSocketServer } from "ws";
+import { promisify } from "node:util";
+import { gzip } from "node:zlib";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5173);
+const gzipAsync = promisify(gzip);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -18,14 +19,42 @@ const MIME = {
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
+  ".webp": "image/webp",
+  ".fbx": "application/octet-stream",
 };
+
+const PUBLIC_FILES = new Set([
+  "index.html",
+  "styles.css",
+  "game.js",
+  "game.bundle.js",
+  "cat-rig.js",
+  "privacy.html",
+  "privacy-policy.html",
+  "support.html",
+]);
+const PUBLIC_PREFIXES = ["assets/", "node_modules/three/"];
+const COMPRESSIBLE = new Set([".html", ".css", ".js", ".json", ".svg"]);
 
 const server = http.createServer(async (req, res) => {
   const rawPath = req.url === "/" ? "/index.html" : req.url.split("?")[0];
-  const safePath = decodeURIComponent(rawPath);
-  const filePath = path.normalize(path.join(__dirname, safePath));
+  let safePath;
+  try {
+    safePath = decodeURIComponent(rawPath).replace(/^\/+/, "");
+  } catch {
+    res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+    res.end("Bad request");
+    return;
+  }
+  if (!isPublicPath(safePath)) {
+    res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    res.end("Not found");
+    return;
+  }
+  const filePath = path.resolve(__dirname, safePath);
+  const relativePath = path.relative(__dirname, filePath);
 
-  if (!filePath.startsWith(__dirname)) {
+  if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
     res.writeHead(403);
     res.end("Forbidden");
     return;
@@ -33,11 +62,20 @@ const server = http.createServer(async (req, res) => {
 
   try {
     let body = await readFile(filePath);
-    const contentType = MIME[path.extname(filePath)] || "application/octet-stream";
-    res.writeHead(200, {
+    const extension = path.extname(filePath).toLowerCase();
+    const contentType = MIME[extension] || "application/octet-stream";
+    const headers = {
       "content-type": contentType,
-      "cache-control": "no-store",
-    });
+      "cache-control": safePath === "index.html" ? "no-cache" : "public, max-age=86400, stale-while-revalidate=604800",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+    };
+    if (body.length > 1024 && COMPRESSIBLE.has(extension) && /\bgzip\b/.test(req.headers["accept-encoding"] || "")) {
+      body = await gzipAsync(body, { level: 6 });
+      headers["content-encoding"] = "gzip";
+      headers.vary = "Accept-Encoding";
+    }
+    res.writeHead(200, headers);
     res.end(body);
   } catch {
     res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
@@ -45,181 +83,13 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+function isPublicPath(value) {
+  if (!value || value.includes("\0") || value.split("/").some((segment) => !segment || segment === "." || segment === ".." || segment.startsWith("."))) {
+    return false;
+  }
+  return PUBLIC_FILES.has(value) || PUBLIC_PREFIXES.some((prefix) => value.startsWith(prefix));
+}
+
 server.listen(PORT, () => {
-  console.log(`Speedy jumper running at http://localhost:${PORT}`);
+  console.log(`Void Spheres: Riftbound running at http://localhost:${PORT}`);
 });
-
-const wss = new WebSocketServer({ server });
-const clients = new Map();
-let joinCounter = 0;
-const roleSlots = new Map();
-const playableRoles = new Set(["p1", "p2"]);
-
-function getOpenClients() {
-  return [...clients.values()].filter((client) => client.socket.readyState === 1);
-}
-
-function normalizeRoles(notify = false) {
-  const openClients = getOpenClients().sort((a, b) => a.joinedAt - b.joinedAt);
-  const openPlayerIds = new Set(openClients.map((client) => client.playerId));
-  for (const [role, playerId] of roleSlots) {
-    if (!openPlayerIds.has(playerId)) {
-      roleSlots.delete(role);
-    }
-  }
-  const assignedIdentities = new Set(roleSlots.values());
-  const activePlayerIds = new Set();
-  openClients.forEach((client) => {
-    const previousRole = client.role;
-    if (activePlayerIds.has(client.playerId)) {
-      client.role = "spectator";
-    } else if (assignedIdentities.has(client.playerId)) {
-      client.role = roleSlots.get("p1") === client.playerId ? "p1" : roleSlots.get("p2") === client.playerId ? "p2" : "spectator";
-      activePlayerIds.add(client.playerId);
-    } else {
-      assignedIdentities.add(client.playerId);
-      activePlayerIds.add(client.playerId);
-      if (!roleSlots.has("p1")) {
-        roleSlots.set("p1", client.playerId);
-        client.role = "p1";
-      } else if (!roleSlots.has("p2")) {
-        roleSlots.set("p2", client.playerId);
-        client.role = "p2";
-      } else {
-        client.role = "spectator";
-      }
-    }
-    if (notify && previousRole !== client.role && client.socket.readyState === 1) {
-      const presence = presencePayload();
-      client.socket.send(JSON.stringify({
-        type: "welcome",
-        id: client.id,
-        role: client.role,
-        ready: presence.ready,
-        players: presence.players,
-      }));
-    }
-  });
-  return openClients;
-}
-
-function isMatchReady() {
-  const p1 = roleSlots.get("p1");
-  const p2 = roleSlots.get("p2");
-  if (!p1 || !p2 || p1 === p2) return false;
-  const openRoleOwners = new Map(
-    getOpenClients()
-      .filter((client) => playableRoles.has(client.role))
-      .map((client) => [client.role, client.playerId])
-  );
-  return openRoleOwners.get("p1") === p1 && openRoleOwners.get("p2") === p2;
-}
-
-function ownsAssignedRole(client) {
-  return playableRoles.has(client.role) && roleSlots.get(client.role) === client.playerId;
-}
-
-function broadcast(payload, exceptSocket = null) {
-  const data = JSON.stringify(payload);
-  for (const { socket } of clients.values()) {
-    if (socket !== exceptSocket && socket.readyState === 1) {
-      socket.send(data);
-    }
-  }
-}
-
-function presencePayload() {
-  return {
-    type: "presence",
-    ready: isMatchReady(),
-    players: getOpenClients().map((client) => ({
-      id: client.id,
-      role: client.role,
-    })),
-  };
-}
-
-wss.on("connection", (socket, request) => {
-  const id = randomUUID();
-  const playerId = readPlayerId(request);
-  const client = {
-    id,
-    playerId,
-    role: "spectator",
-    socket,
-    joinedAt: ++joinCounter,
-  };
-  clients.set(id, client);
-  normalizeRoles();
-
-  const presence = presencePayload();
-  socket.send(JSON.stringify({
-    type: "welcome",
-    id,
-    role: client.role,
-    ready: presence.ready,
-    players: presence.players,
-  }));
-  broadcast(presencePayload());
-
-  socket.on("message", (rawMessage) => {
-    let message;
-    try {
-      message = JSON.parse(String(rawMessage));
-    } catch {
-      return;
-    }
-
-    if (!message || typeof message.type !== "string") {
-      return;
-    }
-
-    const allowedTypes = new Set([
-      "state",
-      "player-state",
-      "shot",
-      "damage",
-      "player-damage",
-      "enemy-down",
-      "enemy-spawn",
-      "restart",
-    ]);
-
-    if (!allowedTypes.has(message.type)) {
-      return;
-    }
-
-    normalizeRoles();
-
-    if (!ownsAssignedRole(client)) {
-      return;
-    }
-
-    if (!isMatchReady()) {
-      return;
-    }
-
-    const { from: _ignoredFrom, at: _ignoredAt, ...safeMessage } = message;
-    broadcast({
-      ...safeMessage,
-      from: client.role,
-      at: Date.now(),
-    }, socket);
-  });
-
-  socket.on("close", () => {
-    clients.delete(id);
-    normalizeRoles(true);
-    broadcast(presencePayload());
-  });
-});
-
-function readPlayerId(request) {
-  try {
-    const url = new URL(request.url || "/", `http://${request.headers?.host || "localhost"}`);
-    const value = url.searchParams.get("playerId") || "";
-    return /^[a-zA-Z0-9._:-]{8,120}$/.test(value) ? value : randomUUID();
-  } catch {
-    return randomUUID();
-  }
-}

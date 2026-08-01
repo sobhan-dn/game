@@ -1,0 +1,3 @@
+# The standalone bundle is reproducible build output. Treat it as generated/binary
+# so shader string whitespace does not pollute reviews or fail whitespace checks.
+game.bundle.js -diff linguist-generated=true

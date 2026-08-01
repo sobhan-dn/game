@@ -1,6 +1,102 @@
 Original prompt: یک بازی سه بعدی با سرور دائمی و دو نفره بساز که با هلیکوپتر بالای سر یک maze پر پیچ و خم هستیم که سربازانی توش حرکت میکنند هم مال ما هم مال دشمن که اونم هلیکوپتر داره و باید با تیر یا دشمنان رو بزنم یا شیلد بزنیم روی یارای خودمون
 
+Current upgrade prompt: بازی را با تمام توان از نظر مکانیک، فیزیک، گرافیک و با استفاده از تولید تصویر بهتر کن.
+
+Current character/planet prompt: همه‌ی شخصیت‌ها را به گربه‌های چهارپا با آناتومی، فیزیک و انیمیشن دقیق تبدیل کن و سیاره‌ها را با جزئیات منظومه‌ی شمسی بازسازی کن؛ استفاده از تولید تصویر مجاز است.
+
 ## Progress
+
+## 2026-08-02 Solo App Store & GitHub Handoff (complete)
+
+- Current prompt: remove every online feature, prepare the complete project so `mehranabi` can ship it to the App Store, and publish the finished work to the owner's GitHub account.
+- Chosen product direction: a fully offline, single-player premium-feeling arena with one human cat, one adaptive AI rival, and coordinated hostile combat cats. Internal `p1`/`p2` actor IDs stay for low-risk gameplay compatibility; all visible labels use YOU / AI.
+- GitHub repository access was verified for `sobhan-dn/game`; collaborator `mehranabi` already has write permission. Work continues on `codex/solo-app-store-release` before a reviewed handoff pull request.
+- Removed the Online Duel selector, WebSocket client, hosted relay URL, random player identifier, role/spectator/presence state, remote interpolation, network message handlers, WebSocket server, `ws` dependency, and the obsolete two-client QA. The Node server is now static-only.
+- Reframed the complete interface as YOU vs TACTICAL AI while preserving internal `p1`/`p2` actor IDs for safe combat compatibility. The adaptive AI rival, hostile targeting, projectiles, parries, scores, respawns, and Rift Surge all remain fully functional in solo play.
+- Added `qa:solo-only`, which passed on HTTP and direct `file://` launch with an active/moving AI rival, zero WebSocket events, zero post-load gameplay requests, no legacy role/peer/ready telemetry, and no browser errors.
+- Unified the public brand as `Void Spheres: Riftbound` (`Void Spheres` on the iOS home screen), replaced the incorrect Terms page with a real offline privacy policy, updated support/review/fastlane metadata, added a mandatory privacy URL, moved device requirements to `arm64`, and removed the stale Render blueprint.
+- Used built-in image generation to replace the humanoid App icon with opposing quadruped cosmic cats and the default white Capacitor splash with a restrained cat/rift launch artwork. Master art is preserved under `assets/branding/`; final iOS assets were resized and visually inspected.
+- Re-captured all five App Store screenshots directly from the live 430×932@3x mobile build at the required 1290×2796 size. The Solo menu, live arena, fire, Phase Dash, and planet-to-planet jump screenshots were visually inspected; a reproducible `capture:app-store` script and report were added.
+- Added a GitHub Pages workflow that builds the standalone `dist` site from Node 22 after changes land on `master`; fastlane marketing/support/privacy URLs now point to the repository Pages site. Pages still needs to be enabled with GitHub Actions after the PR is merged.
+- Final verification passed: all JS/MJS syntax checks, `git diff --check`, zero-vulnerability `npm audit`, desktop and mobile Solar Cats QA, deterministic combat balance (`[0,0,0]` idle deaths versus `[3,4,5]` baseline), Phase Parry, Earth→Mars long-jump transfer, standalone build, Capacitor iOS sync, and a Release iOS Simulator Xcode build with store validation.
+- TODO: publish the verified branch and draft PR, request `mehranabi` as reviewer, then enable GitHub Pages after merge so the App Store URLs become live.
+
+## 2026-08-02 Adaptive Combat Overhaul (complete)
+
+- Current prompt: improve every aspect of the game, replace enemy combat logic with the strongest design, make the current difficulty easier, and add any high-impact polish needed.
+- Read the required web-game workflow and audited the current solo AI, hostile archetypes, HUD, build pipeline, and deterministic QA hooks.
+- Chosen combat thesis: readable skill-based pressure instead of bullet spam. An adaptive threat director will limit simultaneous attackers, telegraph attacks clearly, and ease pressure when the local cat is hurt or behind.
+- Chosen recovery thesis: a regenerating Rift Guard, shard healing, longer hit/respawn protection, phase-dash projectile parries, near-miss charge, and interruptible enemy locks.
+- Chosen rival thesis: the AI cat will alternate between objective hunting and player dueling using a decision state machine, imperfect aim, deliberate fire cadence, and score/health-aware aggression.
+- Restored the missing root `index.html` from the last verified standalone layout and upgraded its combat HUD/menu markup for Guard, incoming-lock warnings, phase parry, and the adaptive director. The root server/build entrypoint was previously broken while `dist/index.html` remained only as an ignored artifact.
+- Implemented the first complete combat pass: four starting hostiles and a four-enemy cap; attack-token coordination with one or two active attackers; score/health-aware pressure relief; longer role-specific telegraphs; line-of-sight checks; imperfect aim; post-shot recovery; and slower respawns.
+- Rebuilt the solo rival as an objective-aware decision AI that alternates between hostile-cat hunting and player dueling, uses a visible aim warmup, deliberately imperfect prediction, slower low-damage shots, tactical spacing, and projectile-aware evasion.
+- Added a 30-point regenerating Rift Guard, shard healing, longer hit and respawn protection, dash projectile clearing, direct Phase Parries, near-miss Rift charge, lock interruption, stagger, animated enemy deaths, contextual enemy health bars, and combat telemetry.
+- Added distinct lock/parry/interrupt/guard/damage/kill sound layers with music ducking, reduced-motion-aware camera/particles/haptics, touch-specific menu labels, a mobile pause control, overlay focus/inert handling, and visible low-health danger.
+- Hardened the WebSocket relay with per-message token buckets, exact payload sanitation, victim-authoritative damage validation, p1-only enemy spawns, normalized shot vectors, shot-origin checks against recent state, and optional Guard synchronization. Syntax and live two-client relay checks passed.
+- `node --check` and `git diff --check` passed, and the first post-overhaul `npm run build` completed successfully, refreshing `game.bundle.js` and `dist`.
+- Added a directional incoming-lock indicator, concise touch HUD labels, accessible alert semantics, hostile health feedback, and final menu/HUD documentation. The required web-game client captured a live `SCOUT LOCK` with one coordinated attacker and zero runtime errors; the screenshot and state were inspected.
+- Added reproducible `npm run qa:combat-balance` coverage. Seeds 11/29/47 went from baseline deaths `[3,4,5]` to `[0,0,0]`; Guard still dropped as low as 6/7/18, all three runs regenerated Guard, enemy cap/attack slots never violated, and AI split time between objectives and player pressure.
+- Verified a real hostile-projectile Phase Parry: the projectile disappeared inside the 6.5-unit window, Rift increased by 6, the parry counter incremented, dash cooldown was consumed, and health/Guard took no damage.
+- Final regression passed for desktop movement/jump/dash/fire, 390×844 touch controls and layout, two-player online role/movement/gait/shot synchronization, Earth→Mars long-jump transfer, direct `file://` launch, server gzip/traversal protection, standalone build, and Capacitor iOS sync. Console/page/request error logs are empty.
+- Made the online QA resilient to real network/browser startup variance by polling for synchronized velocity/gait, waiting for the game-ready hook after navigation commit, and always closing browser contexts in `finally`.
+- TODO: none for this local/native upgrade. Publishing remains a separate authenticated deployment step.
+
+## 2026-07-12 Solar Cats Upgrade (complete)
+
+- Started the cat-anatomy, quadruped-animation, radial-physics, and Solar System planet-texture upgrade.
+- Replaced both player rigs and all scout/sentinel/sniper threats with procedural quadruped combat cats. Added feline head/muzzle/ears/whiskers, articulated two-joint legs and paws, spine/landing motion, four-beat walk, diagonal trot, gallop, airborne poses, weapon recoil, and a seven-segment spring-damped tail.
+- Added cat-shaped multi-sphere projectile hit volumes, cat weapon muzzle origins, lower cat-focused camera framing, and richer online animation state (velocity, grounded/dash/cooldown/platform/gait).
+- Integrated generated Jupiter and Saturn 2:1 maps as optimized WebP, replaced missing-texture fallbacks with six deterministic planet-specific equirectangular surfaces, and added the Sun, axial tilts, atmospheres, Earth clouds, Saturn/Uranus rings, and signature moon systems.
+- Updated the native build pipeline for the new generated planet assets; `node --check` passed for the game, cat rig, and server, and `npm run build` completed successfully.
+- Used built-in image generation to create and inspect exact 2:1, full-bleed, shadowless equirectangular albedo maps for Earth, Mars, Venus, Mercury, Uranus, and Neptune; all eight planets now use generated WebP surfaces, with deterministic procedural maps retained only as load-failure fallbacks.
+- Added reproducible desktop, two-client online, and 390×844 touch QA scripts. Verified idle/walk/gallop, jump rise, airborne pose, dash cooldown, synchronized remote gait/shot, firing, landing/paw contacts, all touch buttons, eight unique planet textures, and zero page/console errors.
+- Final verification: every cat/planet asset returns HTTP 200, the generated planet screenshots were visually inspected in-game, `npm run qa:solar-cats`, `npm run qa:solar-cats-mobile`, `npm run qa:solar-cats-online`, `npm run build`, and `npm run ios:sync` all passed.
+
+## 2026-07-12 Full Quality Upgrade (in progress)
+
+- Started a full gameplay, physics, graphics, UI, audio, mobile, networking, and verification audit.
+- Visual thesis: a kinetic cosmic arena of fractured living worlds, with cyan/amber player language and crimson threats.
+- Interaction thesis: responsive acceleration and landing feedback, camera recoil/impact motion, and readable combat reactions.
+- Generated a custom 2:1 cosmic sky panorama with the built-in image generator and saved it non-destructively as `assets/textures/cosmic-bg-v2.png` for integration.
+- Rebuilt the HUD/menu hierarchy and connected explicit Solo Raid / Online Duel mode controls.
+- Replaced the capsule avatars with animated procedural combat rigs, added three readable enemy archetypes with shot telegraphs, generated-sky integration, tracer projectiles, pooled impact fragments, camera recoil/shake/FOV response, damage feedback, and surface-aligned landing waves.
+- Reworked movement physics with deterministic fixed-step time, stable gravity-source selection, buffered/coyote jumps, descent-only surface landing, health regeneration, phase dash, separated spawns, and a three-second countdown.
+- Replaced point projectile checks with swept segment collisions and fixed the double-hit/remove path.
+- Hardened the static/WebSocket server against malformed URLs, repository/dotfile exposure, oversized payloads, floods, and stale sockets; added caching and gzip for text assets.
+- First full Playwright pass rendered successfully; found and fixed an unhandled pointer-lock rejection and overly lethal AI damage cadence.
+- Verified with the required web-game Playwright client: buffered jump becomes airborne, grounded movement retains contact, Phase Dash consumes/recharges correctly, firing creates live projectiles, and repeated mixed-input runs report no page/console errors.
+- Verified two independent browser identities enter Online Duel as `p1`/`p2`, synchronize movement, and remain ready with no errors.
+- Verified iPhone portrait menu/game layouts, analog joystick movement, touch jump/dash/fire, and safe-area controls at 390×844 with no runtime errors.
+- Verified timer expiry freezes the final score, match-end overlay appears, replay resets scores/time/countdown, solo pause resumes correctly, and mute state updates.
+- Verified malformed URL, dotfile, and traversal requests return 400/404 without crashing the server; gzip/caching headers are present.
+- Converted production textures to high-quality WebP, reduced the native web payload from roughly 48 MB to 1.6 MB, ran `npm run build`, and completed `npm run ios:sync` successfully.
+
+## Remaining deployment note
+
+- The upgraded local/native build is complete. Pushing it to the existing GitHub/Render deployment still requires the user's deployment/authentication step and was not performed in this task.
+
+## 2026-07-13 High-Gravity Action Upgrade (in progress)
+
+- Current prompt: Increase post-jump gravity substantially so cats snap back to the nearest planet; give every planet deterministic random-pattern self-rotation and translation without collisions or excessive separation; increase the overall game speed for a more action-heavy feel.
+- Added centralized action tuning: faster ground/air movement, stronger dash with shorter recharge, faster player shots and cadence, faster AI movement/firing, faster hostile cat traversal/projectiles, and a quicker music pulse.
+- Replaced the fixed planet oscillations with seeded multi-frequency Lissajous motion, variable self-spin, axial wobble, bounded cluster movement, ring-aware collision separation, and maximum pair-distance constraints. Seeded motion keeps the random-looking patterns reproducible.
+- Airborne gravity now ramps rapidly from 96 to 158, gains distance/descent boosts, and always targets the nearest planet while airborne. Added text-state telemetry for gravity, airborne time, planet velocity, spin, motion pattern, and collision clearance.
+- Verified the new feel with the required web-game Playwright client and visually inspected desktop airborne/heavy-landing, clustered-planet, mobile, and two-player screenshots.
+- Measured full-speed ground movement at ~31 units/s, player shots at ~104 units/s, airborne gravity ramping past 150 and peaking around 191 with a ~0.4-second jump/return cycle, and random-pattern planet translation up to ~8 units over a minute.
+- Stress-sampled planet motion for 60 seconds: ring-aware nearest clearance stayed around 2.7+ units, maximum pair spread stayed around 83 units, and peak translation speed was ~2.43 units/s with no console errors.
+- Added a Player 1 authoritative planet clock for online mode so the deterministic random patterns stay aligned despite background-tab throttling. Final two-client drift was ~0.05 seconds / ~0.03 world units; remote movement and shots synchronized.
+- Final verification passed: required Playwright client runs, `npm run qa:solar-cats`, `npm run qa:solar-cats-mobile`, `npm run qa:solar-cats-online`, `node --check game.js`, and `npm run build`. The first repeated online QA attempt exposed its existing key-release timing flake, and the immediate rerun passed; a separate navigation timeout also passed on rerun with the server healthy.
+- TODO: none for this local gameplay upgrade. Deployment remains a separate authenticated step.
+
+## 2026-07-14 Direct HTML Launch Fix (complete)
+
+- Reproduced the root `index.html` failure under `file://`: the browser blocked the ES module `game.js` with a null-origin CORS error. The previous bundled `dist/index.html` started, but every external WebP texture was still blocked under `file://`.
+- Updated the build to generate a classic 3.6 MB `game.bundle.js` that embeds Three.js, the combat-cat rig, and all nine production planet/sky WebP assets as data URLs.
+- Updated root and built `index.html` to load the standalone bundle, and allowed `game.bundle.js` through the local HTTP server. Direct double-click and HTTP launch now share the same tested build.
+- Verified direct `file://` launch with the required web-game Playwright client through start, movement, jump, fire, and gameplay screenshot inspection. A separate direct-file console audit reported zero errors, eight planets, and an active cat player.
+- Verified HTTP responses for both `/` and `/game.bundle.js` return 200 and visually inspected the bundled HTTP gameplay screenshot. `npm run build` and the full `npm run qa:solar-cats` control suite pass.
+- TODO: rerun `npm run build` after future source or texture changes so `game.bundle.js` stays current.
 
 - Replaced the previous flash-card app with a Three.js helicopter maze game.
 - Added a Node HTTP + WebSocket server for two-player realtime state.
@@ -21,6 +117,19 @@ Original prompt: یک بازی سه بعدی با سرور دائمی و دو ن
 ## TODO
 
 - Complete Render authentication, then deploy `https://github.com/sobhan-dn/game` using the included `render.yaml`.
+
+## 2026-07-14 Long-Jump, Spawn Contact, and Music Upgrade (complete)
+
+- Current prompt: make jumps taller/longer for easier planet-to-planet traversal, stop the cat sinking into its starting planet, and add a stronger background track.
+- Raised player launch speed from 29 to 46 and replaced the immediate heavy return-gravity ramp with a 0.62-second 50→112 ramp plus softer distance/descent boosts, giving substantially more airtime and traversal range.
+- Added a shared 1.02-unit feline surface offset and a grounded-player platform anchor. Cats now follow translating planets during the menu, countdown, pause, and end states instead of being left behind while the planet moves through them.
+- Replaced the simple tone loop with a compressed procedural synthwave soundtrack containing sequenced drums, filtered bass, arpeggios, and evolving minor pads; music now starts during the opening countdown and safely resets its transport on a new match.
+- Added jump-profile, exact surface-offset, and audio-style/playing telemetry to `render_game_to_text` for deterministic QA.
+- Added `scripts/qa-long-jump.mjs` and `npm run qa:long-jump`. Deterministic verification measured roughly 12.2 units of jump clearance and 0.93–0.95 seconds of airtime, then confirmed a real Earth→Mars transfer, exact grounded contact, active soundtrack telemetry, and zero console/page errors.
+- Ran the required web-game Playwright client for countdown contact, long-jump transfer, and landing states and visually inspected the screenshots. The cat's paws remain above/on the planet surface at startup, the airborne pose reads clearly, and the landing effect aligns with the destination world.
+- Regression verification passed for desktop controls/combat, 390×844 touch controls, and two-player online state/shot synchronization. Visually inspected the latest desktop, mobile, and online gameplay screenshots.
+- Rebuilt `game.bundle.js` and `dist`, passed `node --check`, and reran the long-jump QA directly against `file://index.html`; the standalone double-click build also transferred Earth→Mars with zero errors.
+- TODO: none for this local gameplay upgrade. Deployment remains a separate authenticated step.
 
 ## 2026-05-16 Replacement
 
@@ -71,6 +180,18 @@ Original prompt: یک بازی سه بعدی با سرور دائمی و دو ن
 ## TODO
 
 - Push/deploy the local `game.js`, `index.html`, and `server.js` changes to GitHub/Render so the permanent URL gets the latest blue/yellow identity fix.
+
+## 2026-07-14 Camera Overview and Audio Unlock (complete)
+
+- Current prompt: move the camera farther back for better environmental awareness and fix background music not playing.
+- Increased the follow-camera distance, height, and base field of view on desktop and touch layouts while preserving aim direction, collision avoidance, recoil, and speed FOV effects.
+- Moved Web Audio unlocking into the capture phase of real pointer/key gestures, added an iOS/Safari silent-buffer primer, truthful context-state telemetry, safe resume handling, and a stronger music mix.
+- Added camera distance/tuning and audio unlock/scheduling telemetry to `render_game_to_text` for deterministic QA.
+- Visual QA found that the wider camera could be obscured by Saturn/Uranus ring planes; rings now smoothly fade only while intersecting the player-to-camera sight corridor.
+- Verified desktop camera distance around 16 world units at a 70-degree base FOV, active Web Audio (`running`, `unlocked`, primed, and scheduling steps), mute/unmute restoration, direct `file://` audio, and zero console/page errors.
+- Passed the required web-game Playwright client, `npm run qa:solar-cats`, `npm run qa:solar-cats-mobile`, and `npm run qa:long-jump`; visually inspected desktop movement/airborne/fire, mobile gameplay, normal wide-camera, and ring-fade screenshots.
+- Rebuilt `game.bundle.js`/`dist` and synchronized the finished web assets into the Capacitor iOS project.
+- TODO: none for this local camera/audio change. Deployment remains a separate authenticated step.
 
 ## 2026-05-25 iPhone App Store Packaging
 
