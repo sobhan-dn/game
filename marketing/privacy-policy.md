@@ -1,25 +1,29 @@
-# Privacy Policy for Speedy jumper
+# Privacy Policy for Void Spheres: Riftbound
 
-Last updated: June 12, 2026
+Last updated: August 2, 2026
 
-Speedy jumper is a mobile game for quick arena battles.
+This policy covers the Void Spheres: Riftbound mobile game. The game is fully offline, single-player, and does not require an account.
 
 ## Data We Store on Your Device
 
-The game may store local gameplay preferences and records on your device, such as best score, best streak, coins, daily progress, Rift progress, and a randomly generated player identifier used to keep online player slots stable during a session.
+The game may save gameplay preferences and records locally on your device, including your best score, best streak, coins, daily progress, and Rift progress. This information is not sent to the developer. You can remove it by deleting the app, subject to your device's normal backup and restore behavior.
 
-## Online Multiplayer
+## Data Collection and Transmission
 
-When online play is used, the game server receives realtime gameplay messages needed to run the match, such as player movement, shots, damage, enemy events, and connection status. These messages are used to operate gameplay and are not intended to identify you personally.
+Void Spheres: Riftbound does not collect, transmit, sell, or share personal data or gameplay events. It has no online gameplay, multiplayer service, account system, cloud synchronization, third-party advertising, analytics SDK, or tracking technology.
 
-## Data We Do Not Collect
+## Device Permissions
 
-Speedy jumper does not require account registration, contact access, camera access, microphone access, location access, or photo library access.
+The game does not request access to your contacts, camera, microphone, location, or photo library.
 
-## Children
+## Children's Privacy
 
-Speedy jumper is not designed to collect personal information from children.
+The game does not knowingly collect personal information from children or any other players.
+
+## Changes to This Policy
+
+If the game's data practices change, this policy will be updated before the affected version is released.
 
 ## Contact
 
-For support or privacy questions, use the public support page at `support.html` on the deployed game site.
+For privacy questions, email `sobhandehghann80@gmail.com` or use the public support page at `support.html` on the deployed game site.

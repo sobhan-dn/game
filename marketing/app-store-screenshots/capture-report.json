@@ -1,0 +1,14 @@
+{
+  "url": "http://127.0.0.1:5173",
+  "viewport": "430x932@3x",
+  "output": "1290x2796",
+  "files": [
+    "01-mode-select.png",
+    "02-live-arena.png",
+    "03-aim-fire.png",
+    "04-streak-coins.png",
+    "05-two-minute-score.png"
+  ],
+  "note": "All screenshots are captured directly from the live solo build with no composited gameplay or external overlays.",
+  "errors": []
+}

@@ -1,1 +1,1 @@
-Initial App Store release with Solo vs AI, online duels, Rift Shards, Rift Surge bursts, mobile touch controls, 3D floating arenas, shooting, enemies, streak bonuses, coins, daily targets, scoring, and quick restarts.
+Initial App Store release with fully offline Solo vs AI combat, adaptive enemies, Rift Shards, Rift Surge bursts, mobile touch controls, 3D floating arenas, shooting, streak bonuses, coins, daily targets, scoring, and quick restarts.

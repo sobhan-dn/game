@@ -2,158 +2,201 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Void Spheres: Riftbound — a fully offline solo combat adventure across a living Solar System arena." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Speedy jumper" />
+    <meta name="apple-mobile-web-app-title" content="Void Spheres: Riftbound" />
     <meta name="theme-color" content="#02050d" />
     <meta name="format-detection" content="telephone=no" />
-    <title>Speedy jumper</title>
+    <title>Void Spheres: Riftbound</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "./node_modules/three/build/three.module.js",
-          "three/addons/": "./node_modules/three/examples/jsm/"
-        }
-      }
-    </script>
-    <script type="module" src="./game.js"></script>
+    <script defer src="./game.bundle.js"></script>
   </head>
-  <body>
+  <body class="overlay-open">
     <div id="app">
-      <canvas id="game"></canvas>
+      <canvas id="game" aria-label="Void Spheres solar cat arena"></canvas>
 
-      <div id="hud">
-        <div class="panel player-panel p1-panel">
-          <div class="player-heading">
-            <span class="label">PLAYER 1</span>
-            <strong>BLUE</strong>
+      <div id="damage-vignette" aria-hidden="true"></div>
+      <div id="combat-feedback" role="status" aria-live="polite"></div>
+      <div id="incoming-warning" role="alert" aria-live="assertive" aria-hidden="true">
+        <span class="warning-bracket"></span>
+        <span id="incoming-warning-direction" aria-hidden="true">▲</span>
+        <strong id="incoming-warning-text">LOCK DETECTED</strong>
+        <small id="incoming-warning-hint">DASH TO PHASE-PARRY</small>
+      </div>
+
+      <div id="hud" aria-label="Combat HUD">
+        <div id="top-alert" aria-hidden="true">
+          <span id="top-alert-fill"></span>
+          <span id="top-alert-glow"></span>
+          <span id="top-alert-text">YOU · 100 HP · 30 GUARD</span>
+        </div>
+
+        <section class="hud-zone health-zone" aria-label="Player and tactical AI health and Guard">
+          <div class="panel player-panel p1-panel">
+            <div class="player-heading">
+              <span class="label">YOU</span>
+              <strong>RIFT CAT</strong>
+            </div>
+            <div class="health-meter" aria-label="Your health and guard">
+              <span id="p1-health-bar" class="health-fill"></span>
+              <span id="p1-shield-bar" class="shield-fill"></span>
+            </div>
+            <div class="health-readout">
+              <span>VITALS <b id="p1-shield">+30</b></span>
+              <strong id="p1-health">100</strong>
+            </div>
           </div>
-          <div class="health-meter" aria-label="Player 1 health">
-            <span id="p1-health-bar" class="health-fill"></span>
+
+          <div class="panel player-panel p2-panel">
+            <div class="player-heading">
+              <span class="label">TACTICAL AI</span>
+              <strong>AI CAT</strong>
+            </div>
+            <div class="health-meter" aria-label="AI rival health and guard">
+              <span id="p2-health-bar" class="health-fill"></span>
+              <span id="p2-shield-bar" class="shield-fill"></span>
+            </div>
+            <div class="health-readout">
+              <span>VITALS <b id="p2-shield">+30</b></span>
+              <strong id="p2-health">100</strong>
+            </div>
           </div>
-          <div class="health-readout">
-            <span>HP</span>
-            <strong id="p1-health">100</strong>
+        </section>
+
+        <section class="hud-zone match-zone" aria-label="Solo raid score and timer">
+          <div class="panel timer-panel">
+            <span class="label">TIME</span>
+            <strong id="timer">2:00</strong>
           </div>
-        </div>
-        <div class="panel player-panel p2-panel">
-          <div class="player-heading">
-            <span class="label">PLAYER 2</span>
-            <strong>YELLOW</strong>
+          <div class="panel score-panel">
+            <span class="label">SCORE</span>
+            <div class="score-row p1-score-row">
+              <span>YOU</span>
+              <strong id="p1-score">0</strong>
+            </div>
+            <div class="score-row p2-score-row">
+              <span>AI</span>
+              <strong id="p2-score">0</strong>
+            </div>
           </div>
-          <div class="health-meter" aria-label="Player 2 health">
-            <span id="p2-health-bar" class="health-fill"></span>
+        </section>
+
+        <section class="hud-zone threat-zone" aria-label="Rift and threat telemetry">
+          <div class="panel surge-panel">
+            <span class="label">RIFT CORE</span>
+            <strong id="rift-charge">0%</strong>
+            <small id="rift-state">COLLECT SHARDS</small>
           </div>
-          <div class="health-readout">
-            <span>HP</span>
-            <strong id="p2-health">100</strong>
+          <div class="panel dash-panel">
+            <span class="label">PHASE</span>
+            <strong id="dash-charge">READY</strong>
+            <small>DASH / PARRY</small>
           </div>
-        </div>
-        <div class="panel score-panel">
-          <span class="label">SCORE</span>
-          <div class="score-row p1-score-row">
-            <span>P1</span>
-            <strong id="p1-score">0</strong>
+          <div class="panel threat-panel">
+            <span class="label">THREATS</span>
+            <strong id="enemies">0</strong>
+            <small id="director-state">ADAPTIVE · CALM</small>
           </div>
-          <div class="score-row p2-score-row">
-            <span>P2</span>
-            <strong id="p2-score">0</strong>
+        </section>
+
+        <section class="hud-zone progress-zone" aria-label="Progress and combat status">
+          <div class="panel streak-panel">
+            <span class="label">STREAK</span>
+            <strong id="streak">0</strong>
+            <small id="best-score">BEST 0</small>
           </div>
-        </div>
-        <div class="panel streak-panel">
-          <span class="label">STREAK</span>
-          <strong id="streak">0</strong>
-          <small id="best-score">BEST 0</small>
-        </div>
-        <div class="panel progress-panel">
-          <span class="label">COINS</span>
-          <strong id="coins">0</strong>
-          <small id="rank">ROOKIE</small>
-        </div>
-        <div class="panel mission-panel">
-          <span class="label">DAILY</span>
-          <strong id="daily-mission">0/12</strong>
-          <small id="daily-reward">+25 COINS</small>
-        </div>
-        <div class="panel surge-panel">
-          <span class="label">RIFT</span>
-          <strong id="rift-charge">0%</strong>
-          <small id="rift-state">COLLECT SHARDS</small>
-        </div>
-        <div class="panel">
-          <span class="label">RED UNITS</span>
-          <strong id="enemies">0</strong>
-        </div>
-        <div class="panel timer-panel">
-          <span class="label">TIME</span>
-          <strong id="timer">2:00</strong>
-        </div>
-        <div class="panel status-panel">
-          <span class="label">STATUS</span>
-          <strong id="status">Tap Start</strong>
-        </div>
+          <div class="panel progress-panel">
+            <span class="label">COINS</span>
+            <strong id="coins">0</strong>
+            <small id="rank">ROOKIE</small>
+          </div>
+          <div class="panel mission-panel">
+            <span class="label">DAILY</span>
+            <strong id="daily-mission">0/12</strong>
+            <small id="daily-reward">+25 COINS</small>
+          </div>
+          <div class="panel status-panel">
+            <span class="label">STATUS</span>
+            <strong id="status">Tap Start</strong>
+          </div>
+        </section>
       </div>
 
       <div id="crosshair" aria-hidden="true">
         <span></span>
         <span></span>
+        <i class="crosshair-dot"></i>
       </div>
 
-      <div id="touch-controls" aria-hidden="true">
-        <div id="touch-stick">
+      <div id="touch-controls" role="group" aria-label="Touch controls">
+        <button id="touch-pause" class="touch-utility" type="button" aria-label="Pause solo match">II</button>
+        <div id="touch-stick" role="application" aria-label="Movement joystick">
+          <span class="stick-axis stick-axis-x"></span>
+          <span class="stick-axis stick-axis-y"></span>
           <span id="touch-stick-knob"></span>
         </div>
         <div id="touch-actions">
-          <button id="touch-jump" class="touch-button" type="button">JUMP</button>
-          <button id="touch-surge" class="touch-button surge" type="button">SURGE</button>
-          <button id="touch-fire" class="touch-button fire" type="button">FIRE</button>
+          <button id="touch-jump" class="touch-button jump" type="button"><span>JUMP</span></button>
+          <button id="touch-dash" class="touch-button dash" type="button"><span>PARRY</span></button>
+          <button id="touch-surge" class="touch-button surge" type="button"><span>RIFT</span></button>
+          <button id="touch-fire" class="touch-button fire" type="button"><span>FIRE</span></button>
         </div>
       </div>
 
       <div id="overlay" class="visible">
-        <div class="card">
-          <p class="eyebrow">Speedy jumper</p>
-          <h1>Two-minute jumping duel</h1>
-          <p class="lead">
-            Start instantly, collect Rift Shards, trigger Surge bursts, chase streak bonuses, and complete
-            the daily score target. When the clock hits zero, the higher score wins.
-          </p>
+        <main class="card menu-shell" aria-labelledby="game-title">
+          <header class="menu-hero">
+            <p class="eyebrow"><span></span> ARENA 07 / ADAPTIVE SIGNAL</p>
+            <h1 id="game-title">
+              <span>VOID</span>
+              <span>SPHERES</span>
+              <em>RIFTBOUND</em>
+            </h1>
+            <p class="lead">Run on four paws. Break enemy locks, phase-parry red fire, and hunt across eight living worlds. The arena now fights smart—and fair.</p>
+          </header>
 
-          <ul class="controls">
-            <li><kbd>Streak</kbd> Chain hits and red-unit kills to build bonus pressure</li>
-            <li><kbd>Rift</kbd> Collect four shards, then trigger Surge to clear nearby threats</li>
-            <li><kbd>Coins</kbd> Earn rewards from wins, streaks, and daily targets</li>
-            <li><kbd>AI</kbd> Start instantly against a moving yellow rival</li>
-            <li><kbd>W A S D</kbd> Move across the spheres</li>
-            <li><kbd>E</kbd> Activate Rift Surge when the meter reaches 100%</li>
-            <li><kbd>Space / Shift</kbd> Jump between spheres</li>
-            <li><kbd>Click / Enter</kbd> Fire through the crosshair</li>
-            <li><kbd>Mouse</kbd> Aim the camera</li>
-            <li><kbd>Touch</kbd> iPhone: left stick moves, right side aims, buttons jump/fire</li>
-            <li><kbd>Timer</kbd> 2 minutes, highest score wins</li>
-          </ul>
+          <section class="mode-select solo-mode" aria-label="Offline solo mode">
+            <article class="mode-option active solo-card">
+              <span class="mode-index">01</span>
+              <span class="mode-copy">
+                <small>OFFLINE SOLO RAID</small>
+                <strong>ADAPTIVE TACTICAL AI</strong>
+              </span>
+              <span class="mode-arrow solo-badge" aria-hidden="true">∞</span>
+            </article>
+          </section>
 
-          <button id="start-button" type="button">Start Match</button>
-          <button id="reward-ad-button" class="secondary-button" type="button" hidden>
-            Watch Ad to Double Coins
-          </button>
-          <p id="overlay-note" class="note">For best aim, tap the playfield once after starting.</p>
-        </div>
-      </div>
-
-      <div id="ad-dialog" class="ad-dialog" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="ad-dialog-title">
-        <div class="ad-dialog-card">
-          <p class="eyebrow">Advertisement</p>
-          <h2 id="ad-dialog-title">Your match will start after the ad</h2>
-          <p class="lead">Close the ad when it finishes. The two-minute timer starts only after you return to the game.</p>
-          <div class="ad-dialog-actions">
-            <button id="ad-dialog-confirm" type="button">Continue to Ad</button>
-            <button id="ad-dialog-cancel" class="secondary-button" type="button">Cancel</button>
+          <div class="assist-strip" aria-label="Adaptive difficulty enabled">
+            <span><i></i> ADAPTIVE COMBAT DIRECTOR</span>
+            <strong>READABLE LOCKS · GUARD ACTIVE</strong>
           </div>
-        </div>
+
+          <section class="briefing" aria-label="Controls">
+            <p class="briefing-title">CONTROL MATRIX</p>
+            <ul class="controls">
+              <li><kbd>WASD</kbd><span>Move</span></li>
+              <li><kbd>MOUSE</kbd><span>Aim</span></li>
+              <li><kbd>SPACE</kbd><span>Long jump</span></li>
+              <li><kbd>SHIFT</kbd><span>Dash / parry</span></li>
+              <li><kbd>CLICK</kbd><span>Fire / interrupt</span></li>
+              <li><kbd>E</kbd><span>Rift surge</span></li>
+            </ul>
+          </section>
+
+          <footer class="menu-actions">
+            <button id="start-button" class="primary-action" type="button">
+              <span>ENTER THE RIFT</span>
+            </button>
+            <div class="utility-actions" aria-label="Game settings">
+              <button id="fullscreen-button" type="button">FULLSCREEN <kbd>F</kbd></button>
+              <button id="mute-button" type="button" aria-pressed="false">SOUND ON <kbd>M</kbd></button>
+            </div>
+            <p id="overlay-note" class="note">Red lock lines can be interrupted · shards restore Guard · dash through shots to parry</p>
+          </footer>
+        </main>
       </div>
     </div>
   </body>
