@@ -137,7 +137,22 @@
           </ul>
 
           <button id="start-button" type="button">Start Match</button>
+          <button id="reward-ad-button" class="secondary-button" type="button" hidden>
+            Watch Ad to Double Coins
+          </button>
           <p id="overlay-note" class="note">For best aim, tap the playfield once after starting.</p>
+        </div>
+      </div>
+
+      <div id="ad-dialog" class="ad-dialog" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="ad-dialog-title">
+        <div class="ad-dialog-card">
+          <p class="eyebrow">Advertisement</p>
+          <h2 id="ad-dialog-title">Your match will start after the ad</h2>
+          <p class="lead">Close the ad when it finishes. The two-minute timer starts only after you return to the game.</p>
+          <div class="ad-dialog-actions">
+            <button id="ad-dialog-confirm" type="button">Continue to Ad</button>
+            <button id="ad-dialog-cancel" class="secondary-button" type="button">Cancel</button>
+          </div>
         </div>
       </div>
     </div>

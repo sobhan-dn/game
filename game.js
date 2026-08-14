@@ -5,7 +5,11 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const canvas = document.getElementById("game");
   const overlay = document.getElementById("overlay");
   const startButton = byId("start-button", "start");
+  const rewardAdButton = byId("reward-ad-button");
   const overlayNote = byId("overlay-note");
+  const adDialog = byId("ad-dialog");
+  const adDialogConfirm = byId("ad-dialog-confirm");
+  const adDialogCancel = byId("ad-dialog-cancel");
   const p1HealthValue = byId("p1-health", "p1");
   const p2HealthValue = byId("p2-health", "p2");
   const p1HealthBar = document.getElementById("p1-health-bar");
@@ -63,6 +67,25 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   const mode = { type: "ai" };
   const aiBrain = { nextJump: 0, nextStrafe: 0, strafe: 1, fireDelay: 0, aggression: 0.75 };
   const roundSeconds = 120;
+  const admobTestIds = {
+    interstitial: "ca-app-pub-3940256099942544/4411468910",
+    rewarded: "ca-app-pub-3940256099942544/1712485313",
+  };
+  const ads = {
+    plugin: null,
+    interstitialEvents: null,
+    initialized: false,
+    initializationPromise: null,
+    canRequest: false,
+    interstitialReady: false,
+    interstitialLoading: false,
+    awaitingMatchStart: false,
+    rewardReady: false,
+    rewardLoading: false,
+    rewardShowing: false,
+    rewardClaimed: false,
+    rewardAmount: 0,
+  };
   const state = {
     started: false,
     ended: false,
@@ -131,6 +154,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   initScene();
   resetGame();
   animate();
+  ads.initializationPromise = initializeAds();
 
   function makePlayer(id, label, color, bulletColor) {
     const mesh = new THREE.Group();
@@ -247,6 +271,9 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     state.message = "Tap Start";
     state.timeLeft = roundSeconds;
     state.nextEnemySpawn = 0;
+    ads.rewardClaimed = false;
+    ads.rewardAmount = 0;
+    updateRewardAdButton();
     document.body.classList.remove("game-over", "target-locked");
     document.body.classList.remove("rift-active");
     createPlatforms();
@@ -411,6 +438,162 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     player.jumpGrace = 0;
     player.respawnTimer = 0;
     syncMesh(player);
+  }
+
+  async function initializeAds() {
+    if (!isNativeIos) return;
+    try {
+      const admobModule = await import("@capacitor-community/admob");
+      ads.plugin = admobModule.AdMob;
+      ads.interstitialEvents = admobModule.InterstitialAdPluginEvents;
+      await ads.plugin.initialize();
+      await ads.plugin.addListener(ads.interstitialEvents.Dismissed, finishPregameAd);
+      await ads.plugin.addListener(ads.interstitialEvents.FailedToShow, finishPregameAd);
+
+      try {
+        let consentInfo = await ads.plugin.requestConsentInfo();
+        if (!consentInfo.canRequestAds && consentInfo.isConsentFormAvailable) {
+          consentInfo = await ads.plugin.showConsentForm();
+        }
+        ads.canRequest = Boolean(consentInfo.canRequestAds);
+      } catch (error) {
+        console.warn("Ad consent setup failed; test ads remain available.", error);
+        ads.canRequest = true;
+      }
+
+      ads.initialized = true;
+      if (ads.canRequest) {
+        void preloadInterstitial();
+        void preloadRewardAd();
+      }
+    } catch (error) {
+      console.warn("AdMob initialization failed.", error);
+    }
+  }
+
+  async function preloadInterstitial() {
+    if (!ads.initialized || !ads.canRequest || ads.interstitialReady || ads.interstitialLoading) return;
+    ads.interstitialLoading = true;
+    try {
+      await ads.plugin.prepareInterstitial({
+        adId: admobTestIds.interstitial,
+        isTesting: true,
+      });
+      ads.interstitialReady = true;
+    } catch (error) {
+      console.warn("Interstitial ad failed to load.", error);
+    } finally {
+      ads.interstitialLoading = false;
+    }
+  }
+
+  async function preloadRewardAd() {
+    if (!ads.initialized || !ads.canRequest || ads.rewardReady || ads.rewardLoading || ads.rewardShowing) return;
+    ads.rewardLoading = true;
+    try {
+      await ads.plugin.prepareRewardVideoAd({
+        adId: admobTestIds.rewarded,
+        isTesting: true,
+      });
+      ads.rewardReady = true;
+    } catch (error) {
+      console.warn("Rewarded ad failed to load.", error);
+    } finally {
+      ads.rewardLoading = false;
+      updateRewardAdButton();
+    }
+  }
+
+  function openPregameAdDialog() {
+    if (!isNativeIos) {
+      startGame();
+      return;
+    }
+    adDialog?.classList.add("visible");
+    adDialog?.setAttribute("aria-hidden", "false");
+  }
+
+  function closePregameAdDialog() {
+    adDialog?.classList.remove("visible");
+    adDialog?.setAttribute("aria-hidden", "true");
+  }
+
+  async function showPregameInterstitial() {
+    closePregameAdDialog();
+    if (startButton) {
+      startButton.disabled = true;
+      startButton.textContent = "Loading Ad...";
+    }
+
+    await ads.initializationPromise;
+    if (!ads.interstitialReady) await preloadInterstitial();
+    if (!ads.interstitialReady) {
+      finishPregameAd();
+      return;
+    }
+
+    ads.awaitingMatchStart = true;
+    ads.interstitialReady = false;
+    try {
+      await audio.context?.suspend();
+      await ads.plugin.showInterstitial();
+    } catch (error) {
+      console.warn("Interstitial ad failed to show.", error);
+      finishPregameAd();
+    }
+  }
+
+  function finishPregameAd() {
+    if (!ads.awaitingMatchStart && !startButton?.disabled) return;
+    ads.awaitingMatchStart = false;
+    if (startButton) startButton.disabled = false;
+    startGame();
+    setTimeout(() => void preloadInterstitial(), 500);
+  }
+
+  function updateRewardAdButton() {
+    if (!rewardAdButton) return;
+    const canOfferReward = isNativeIos && state.ended && !ads.rewardClaimed && ads.rewardAmount > 0;
+    rewardAdButton.hidden = !canOfferReward;
+    rewardAdButton.disabled = ads.rewardShowing || ads.rewardLoading;
+    if (canOfferReward) {
+      rewardAdButton.textContent = ads.rewardShowing || ads.rewardLoading
+        ? "Loading Reward..."
+        : `Watch Ad to Double ${ads.rewardAmount} Coins`;
+    }
+  }
+
+  async function showPostgameRewardAd() {
+    if (!state.ended || ads.rewardClaimed || ads.rewardAmount <= 0 || ads.rewardShowing) return;
+    ads.rewardShowing = true;
+    updateRewardAdButton();
+    await ads.initializationPromise;
+    if (!ads.rewardReady) await preloadRewardAd();
+    if (!ads.rewardReady) {
+      ads.rewardShowing = false;
+      if (overlayNote) overlayNote.textContent = "The reward ad is not available. Try again shortly.";
+      updateRewardAdButton();
+      return;
+    }
+
+    const rewardAmount = ads.rewardAmount;
+    ads.rewardReady = false;
+    try {
+      await ads.plugin.showRewardVideoAd();
+      if (!state.ended || ads.rewardClaimed) return;
+      ads.rewardClaimed = true;
+      awardCoins(rewardAmount, true);
+      state.message = `Reward complete: +${rewardAmount} coins. Match coins doubled to ${state.matchCoins}.`;
+      if (overlayNote) overlayNote.textContent = state.message;
+      updateUi();
+    } catch (error) {
+      console.warn("Rewarded ad did not complete.", error);
+      if (overlayNote) overlayNote.textContent = "Finish the ad to receive the extra coins.";
+    } finally {
+      ads.rewardShowing = false;
+      updateRewardAdButton();
+      setTimeout(() => void preloadRewardAd(), 500);
+    }
   }
 
   function startGame() {
@@ -960,8 +1143,11 @@ import * as THREE from "./node_modules/three/build/three.module.js";
       state.bestScore = scores[net.role];
       writeNumber("speedy-jumper-best-score", state.bestScore);
     }
+    ads.rewardAmount = state.matchCoins;
+    ads.rewardClaimed = false;
     state.message = `${reason} ${winner}. Final ${scores.p1}-${scores.p2}. +${state.matchCoins} coins. Best ${state.bestScore}.`;
     showOverlay("Play Again", state.message);
+    updateRewardAdButton();
     document.body.classList.add("game-over");
   }
 
@@ -1528,7 +1714,10 @@ import * as THREE from "./node_modules/three/build/three.module.js";
     button.addEventListener("pointerleave", onRelease);
   };
 
-  bindPress(startButton, startGame);
+  bindPress(startButton, openPregameAdDialog);
+  bindPress(rewardAdButton, showPostgameRewardAd);
+  bindPress(adDialogConfirm, showPregameInterstitial);
+  bindPress(adDialogCancel, closePregameAdDialog);
 
   canvas.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" || event.clientX < innerWidth * 0.38) return;

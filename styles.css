@@ -586,6 +586,71 @@ button:active {
   transform: translateY(1px);
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+  transform: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.secondary-button {
+  margin-top: 12px;
+  border: 1px solid rgba(111, 247, 221, 0.35);
+  background: rgba(12, 34, 47, 0.94);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+.secondary-button:hover {
+  box-shadow: 0 10px 24px rgba(10, 208, 177, 0.18);
+}
+
+.ad-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(1, 5, 10, 0.88);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.ad-dialog.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ad-dialog-card {
+  width: min(480px, calc(100vw - 28px));
+  padding: 28px;
+  border: 1px solid rgba(111, 247, 221, 0.28);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(11, 20, 37, 0.98), rgba(5, 11, 20, 0.98));
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.62);
+}
+
+.ad-dialog-card h2 {
+  margin: 0 0 14px;
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  line-height: 1.15;
+}
+
+.ad-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ad-dialog-actions .secondary-button {
+  margin-top: 0;
+}
+
 .note {
   margin: 12px 0 0;
   color: rgba(181, 202, 216, 0.86);

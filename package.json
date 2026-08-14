@@ -1,6 +1,6 @@
 {
   "name": "speedy-jumper",
-  "version": "2.2",
+  "version": "3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "ios:open": "npm run ios:sync && npx cap open ios"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.0.1",
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
     "@capacitor/ios": "^8.3.4",
