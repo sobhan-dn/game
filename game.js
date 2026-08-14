@@ -1280,7 +1280,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
   }
 
   function connectOnline() {
-    const hostedWsUrl = "wss://speedy-jumper.onrender.com";
+    const hostedWsUrl = "wss://void-spheres.abghari.com";
     const baseWsUrl = location.protocol === "file:"
       || isNativeIos
       ? hostedWsUrl

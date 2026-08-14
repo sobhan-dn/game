@@ -86,7 +86,7 @@ Original prompt: یک بازی سه بعدی با سرور دائمی و دو ن
 ## TODO
 
 - In Xcode, set the real Apple Developer Team/signing profile and archive a Release build for App Store Connect.
-- Confirm the hosted WebSocket URL `wss://maze-heli-command.onrender.com` is the production server you want before review.
+- Confirm the hosted WebSocket URL `wss://void-spheres.abghari.com` is live before review.
 
 ## 2026-05-20 Role Lock And Start Gate
 

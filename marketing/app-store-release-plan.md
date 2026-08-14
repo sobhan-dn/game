@@ -86,7 +86,7 @@ Add ads only after the game has stable Day-1 retention. If retention is weak, ad
 4. Archive with Release configuration.
 5. Upload the archive to App Store Connect.
 6. Create the app record and paste the metadata from `fastlane/metadata/en-US`.
-7. Confirm `https://speedy-jumper.onrender.com/` and `/support.html` are live before submission.
+7. Confirm `https://void-spheres.abghari.com/`, `/support.html`, `/privacy.html`, and `/app-ads.txt` are live before submission.
 8. Add final screenshots and privacy answers.
 9. Paste `marketing/review-notes.txt` into App Review Notes so Apple can test the unique Rift Shard / Rift Surge loop.
 10. Submit for App Review.
