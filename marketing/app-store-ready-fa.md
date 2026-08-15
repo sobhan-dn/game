@@ -20,16 +20,16 @@ Void Spheres: Riftbound is a fast 3D arena battler built for quick mobile matche
 
 Jump across floating neon spheres, collect Rift Shards, aim through the crosshair, fire at your rival, and survive the pressure from red enemy units. Every match lasts two minutes, so every hit, dodge, surge burst, streak, and coin reward matters.
 
-Play instantly in a fully offline, single-player battle against an adaptive AI rival. The controls are simple to learn on iPhone: use the left stick to move, drag to aim, then jump and fire with quick touch buttons.
+Play instantly in an offline-ready, single-player battle against an adaptive AI rival. The controls are simple to learn on iPhone: use the left stick to move, drag to aim, then jump and fire with quick touch buttons. The native iOS app may use network access for a standard advertisement between completed matches.
 
 Why you will keep coming back:
 - Fast two-minute arena battles
-- Fully offline Solo vs AI battles
+- Offline-ready Solo vs AI battles with no account required
 - Adaptive rival and enemy combat behavior
 - Floating 3D neon spheres with smooth action
 - Rift Shards and Rift Surge bursts that change the flow of each round
 - Touch controls tuned for phone play
-- Jumping, shooting, enemy pressure, health, scoring, and instant restarts
+- Jumping, shooting, enemy pressure, health, scoring, and post-match replay
 - Streak bonuses, coins, daily targets, best score, and best streak tracking
 
 Move fast, control the arena, and make every shot count.
@@ -43,7 +43,7 @@ Move fast, control the arena, and make every shot count.
 
 1. `01-mode-select.png`
    متن اصلی داخل عکس: Offline Solo Raid
-   کاربرد: نشان دادن صفحه شروع تک‌نفره و تاکید بر اجرای کاملا آفلاین.
+   کاربرد: نشان دادن صفحه شروع تک‌نفره و تأکید بر اجرای آفلاین هسته‌ی بازی بدون نیاز به حساب.
 
 2. `02-live-arena.png`
    متن روی عکس: Living Solar System Arena
@@ -65,7 +65,7 @@ Move fast, control the arena, and make every shot count.
 
 این بازی را در App Store به عنوان یک بازی اکشن سه بعدی سریع معرفی کن، نه فقط یک بازی تیراندازی ساده. نقطه فروش اصلی اینهاست:
 - مبارزه های کوتاه دو دقیقه ای
-- حالت کاملا آفلاین و تک نفره Solo vs AI برای شروع فوری
+- هسته‌ی آفلاین و تک‌نفره‌ی Solo vs AI برای شروع فوری؛ تحویل تبلیغ به اینترنت نیاز دارد
 - هوش مصنوعی تطبیقی برای رقیب و دشمن ها
 - محیط سه بعدی با کره های نئونی شناور
 - مکانیک اختصاصی Rift Shard و Rift Surge

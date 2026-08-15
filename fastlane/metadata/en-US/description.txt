@@ -2,16 +2,16 @@ Void Spheres: Riftbound is a fast 3D arena battler built for quick mobile matche
 
 Jump across floating neon spheres, collect Rift Shards, aim through the crosshair, fire at your rival, and survive the pressure from red enemy units. Every match lasts two minutes, so every hit, dodge, surge burst, streak, and coin reward matters.
 
-Play instantly in a fully offline, single-player battle against an adaptive AI rival. The controls are simple to learn on iPhone: use the left stick to move, drag to aim, then jump and fire with quick touch buttons.
+Play a single-player battle against an adaptive AI rival, with core gameplay and progress available offline. The controls are simple to learn on iPhone: use the left stick to move, drag to aim, then jump and fire with quick touch buttons.
 
 Why you will keep coming back:
 - Fast two-minute arena battles
-- Fully offline Solo vs AI battles
+- Offline-ready Solo vs AI battles
 - Adaptive rival and enemy combat behavior
 - Floating 3D neon spheres with smooth action
 - Rift Shards and Rift Surge bursts that change the flow of each round
 - Touch controls tuned for phone play
-- Jumping, shooting, enemy pressure, health, scoring, and instant restarts
+- Jumping, shooting, enemy pressure, health, scoring, and post-match ad breaks
 - Streak bonuses, coins, daily targets, best score, and best streak tracking
 
 Move fast, control the arena, and make every shot count.

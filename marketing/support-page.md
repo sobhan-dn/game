@@ -1,6 +1,6 @@
 # Void Spheres: Riftbound Support
 
-For support with Void Spheres: Riftbound, use the public support page published with the game site or contact the developer through the App Store product page. The game itself is fully offline and single-player.
+For support with Void Spheres: Riftbound, use the public support page published with the game site or contact the developer through the App Store product page. Core gameplay is offline-ready and single-player; the native iOS build uses network access for post-match advertising and privacy messages when available.
 
 ## Common Questions
 

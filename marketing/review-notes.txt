@@ -1,4 +1,4 @@
-Void Spheres: Riftbound is a fully offline, single-player game and does not require an account or internet connection.
+Void Spheres: Riftbound is a single-player game and does not require an account. Core gameplay and local progress work offline. The native iOS build initializes Google AdMob/UMP and attempts one standard interstitial at the natural break after each completed two-minute match. If consent does not permit a request, the device is offline, or an ad is unavailable, Replay unlocks automatically.
 
 This build was updated after a Guideline 4.3(a) review message. It is not a reskin of the earlier project: the submitted game has its own Void Spheres: Riftbound identity, 3D spherical arena traversal, two-minute scoring rules, red-unit pressure, persistent streak/coin/daily progress, and a Rift Shard / Rift Surge mechanic. Reviewers can see the mechanic in Solo vs AI by collecting the floating teal shards until the Rift meter reaches 100%, then tapping SURGE.
 
@@ -8,3 +8,4 @@ To test the only game mode:
 3. Use the left touch stick to move, the Jump button to jump, and the Fire button to shoot.
 4. Collect four teal Rift Shards, then tap SURGE to trigger the area burst.
 5. Score points to see coins, streaks, best score, and daily target progress update.
+6. Let the two-minute timer expire. The results screen pauses briefly for the post-match ad; after the ad is dismissed, RE-ENTER THE RIFT becomes available. This development build uses Google's official iOS test ad identifiers.

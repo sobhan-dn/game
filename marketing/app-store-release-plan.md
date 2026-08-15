@@ -56,7 +56,7 @@ Run a small creative test before scaling:
 
 Use the subtitle and first two description lines to sell the loop immediately:
 
-Fully offline solo sphere battles against adaptive AI. Jump, collect Rift Shards, trigger Surge bursts, and chase streak bonuses across floating neon arenas.
+Offline-ready solo sphere battles against adaptive AI, with no account required. Jump, collect Rift Shards, trigger Surge bursts, and chase streak bonuses across floating neon arenas.
 
 Secondary retention line:
 
@@ -68,25 +68,24 @@ jumper, arena, action, shooter, platformer, rift, surge, shards, ai, offline, ne
 
 ## Monetization Roadmap
 
-Do not make the first release paid. Ship free first and measure retention.
+Ship free first and measure retention. The current native iOS build now has the first monetization layer:
 
-Best first monetization path after gameplay validation:
-
-- Rewarded ad: optional continue after death or +25 coin bonus after a match.
+- Standard interstitial: one preloaded ad at the natural break after each completed match, with fail-open behavior for offline, consent, no-fill, initialization, and presentation failures.
+- Rewarded ad (future, optional only): continue after death or a coin bonus after a match. It must always provide a no-ad path.
 - Cosmetic purchase: sphere trails, player glow colors, projectile skins.
 - No pay-to-win damage or health boosts in version 1.
 
-Add ads only after the game has stable Day-1 retention. If retention is weak, ads will reduce reviews and hurt growth.
+Before release, replace Google's sample App ID and interstitial unit with identifiers owned by this app, disable testing mode, publish that account's `app-ads.txt` at the root of the verified developer website domain, verify the bundled SKAdNetwork entries against Google's current list, and complete App Store privacy disclosures. Monitor Day-1 retention, ad frequency, and reviews after launch.
 
 ## Final Manual Steps
 
-1. Open `ios/App/App.xcodeproj` in Xcode.
+1. Replace the sample identifiers, then run `npm run ios:release:prepare`; do not archive if this production guard fails. Open `ios/App/App.xcodeproj` in Xcode afterward.
 2. Select target `App`, set the Apple Developer Team, and confirm bundle ID ownership.
-3. Build on a real iPhone and verify fully offline gameplay, touch controls, icon, launch screen, and audio state.
+3. Build on a real iPhone and verify offline fallback, consent/privacy options, one post-match ad per completed match, touch controls, icon, launch screen, and audio restoration.
 4. Archive with Release configuration.
 5. Upload the archive to App Store Connect.
 6. Create the app record and paste the metadata from `fastlane/metadata/en-US`.
-7. Merge the release PR, enable GitHub Pages with GitHub Actions as the publishing source, then confirm `https://sobhan-dn.github.io/game/`, `/support.html`, and `/privacy.html` are live before submission.
+7. Merge the release PR, enable GitHub Pages with GitHub Actions as the publishing source, then confirm `https://sobhan-dn.github.io/game/`, `/support.html`, and `/privacy.html` are live. Publish the production AdMob publisher record at the root-domain `https://sobhan-dn.github.io/app-ads.txt` (not under `/game/`) before submission.
 8. Add final screenshots and privacy answers.
 9. Paste `marketing/review-notes.txt` into App Review Notes so Apple can test the unique Rift Shard / Rift Surge loop.
 10. Submit for App Review.

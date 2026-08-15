@@ -1,5 +1,6 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import { animateCombatCat, createCombatCat } from "./cat-rig.js";
+import { createReplayAdService, isNativeIosRuntime } from "./ads.js";
 
 (() => {
   const byId = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
@@ -7,6 +8,8 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
   const overlay = document.getElementById("overlay");
   const startButton = byId("start-button", "start");
   const overlayNote = byId("overlay-note");
+  const adStatus = byId("ad-status");
+  const privacyOptionsButton = byId("privacy-options-button");
   const p1HealthValue = byId("p1-health", "p1");
   const p2HealthValue = byId("p2-health", "p2");
   const p1HealthBar = document.getElementById("p1-health-bar");
@@ -215,6 +218,13 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
     scheduledSteps: 0,
     unlockError: "",
   };
+  let replayGateBlocked = false;
+  let postMatchAdGeneration = 0;
+  const replayAds = createReplayAdService({
+    nativeIos: isNativeIosRuntime(),
+    getMuted: () => state.muted,
+    onStateChange: updateAdInterface,
+  });
 
   const players = {
     p1: makePlayer("p1", "You", 0x65f7df, 0x5ef5ff),
@@ -429,6 +439,7 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
   initScene();
   resetGame();
   animate();
+  void replayAds.initialize();
 
   function makePlayer(id, label, color, bulletColor) {
     const mesh = new THREE.Group();
@@ -610,6 +621,10 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
   }
 
   function resetGame() {
+    postMatchAdGeneration += 1;
+    replayGateBlocked = false;
+    if (startButton) startButton.disabled = false;
+    if (adStatus) adStatus.hidden = true;
     for (const item of [...platforms, ...riftShards, ...enemies]) {
       const object = item.mesh || item.group;
       root.remove(object);
@@ -1116,6 +1131,18 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
 
   function startGame() {
     unlockAudio();
+    const adState = replayAds.snapshot();
+    if (!state.started && !state.ended && adState.supported && !adState.consentSettled) {
+      updateAdInterface(adState);
+      return;
+    }
+    if (state.ended && replayGateBlocked) {
+      if (adStatus) {
+        adStatus.hidden = false;
+        adStatus.textContent = "The next match unlocks when the ad break finishes.";
+      }
+      return;
+    }
     if (state.paused) {
       state.paused = false;
       state.message = "Match resumed";
@@ -1134,6 +1161,7 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
     state.message = "Drop in 3";
     hideOverlay();
     restartMusicTransport();
+    void replayAds.preload();
     playSweep(360, 780, 0.2, 0.08, "triangle");
     updateUi();
   }
@@ -2235,6 +2263,116 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
     state.message = `${reason} ${winner}. Final ${scores.p1}-${scores.p2}. +${state.matchCoins} coins. Best ${state.bestScore}.`;
     showOverlay("RE-ENTER THE RIFT", state.message);
     document.body.classList.add("game-over");
+    void beginPostMatchAdBreak();
+  }
+
+  function updateAdInterface(adState) {
+    const startupPrivacyPending = adState.supported && !adState.consentSettled;
+    if (!state.started && !state.ended && startButton) {
+      startButton.disabled = startupPrivacyPending;
+      if (startupPrivacyPending) startButton.textContent = "PRIVACY SETUP…";
+      else if (startButton.textContent === "PRIVACY SETUP…") startButton.textContent = "ENTER THE RIFT";
+    }
+    if (privacyOptionsButton) {
+      privacyOptionsButton.hidden = !adState.supported || !adState.privacyOptionsRequired;
+      privacyOptionsButton.disabled = adState.showing || adState.privacyFormShowing || replayGateBlocked;
+    }
+    if (adStatus && !state.started && !state.ended) {
+      adStatus.hidden = !startupPrivacyPending;
+      if (startupPrivacyPending) adStatus.textContent = "Preparing required advertising privacy choices…";
+    }
+    if (!adStatus || !state.ended || !replayGateBlocked) return;
+    adStatus.hidden = false;
+    if (adState.showing) adStatus.textContent = "Advertisement in progress…";
+    else if (adState.phase === "ready") adStatus.textContent = "Advertisement ready…";
+    else adStatus.textContent = "Preparing the ad break…";
+  }
+
+  function unlockReplayAfterAd({ shown = false, reason = "unavailable", hideStatus = false } = {}) {
+    replayGateBlocked = false;
+    updateAdInterface(replayAds.snapshot());
+    if (startButton) {
+      startButton.disabled = false;
+      startButton.textContent = "RE-ENTER THE RIFT";
+    }
+    if (adStatus) {
+      adStatus.hidden = hideStatus;
+      adStatus.textContent = shown
+        ? "Ad break complete · next match ready"
+        : reason === "unsupported"
+          ? ""
+          : "Ad unavailable · replay unlocked";
+    }
+    setTimeout(() => startButton?.focus({ preventScroll: true }), 0);
+  }
+
+  async function beginPostMatchAdBreak() {
+    const generation = ++postMatchAdGeneration;
+    const adState = replayAds.snapshot();
+    if (!adState.supported || document.visibilityState !== "visible") {
+      unlockReplayAfterAd({ reason: "unsupported", hideStatus: true });
+      return;
+    }
+
+    // Never wait for a late load on the results screen. If the ad was not
+    // preloaded during the two-minute match, this replay fails open.
+    if (!adState.initialized || !adState.sdkInitialized || !adState.canRequest || !adState.ready
+      || adState.privacyFormShowing) {
+      unlockReplayAfterAd({ reason: "not-ready" });
+      void replayAds.preload();
+      return;
+    }
+
+    replayGateBlocked = true;
+    updateAdInterface(adState);
+    clearInputs();
+    if (startButton) {
+      startButton.disabled = true;
+      startButton.textContent = "AD BREAK…";
+    }
+    if (adStatus) {
+      adStatus.hidden = false;
+      adStatus.textContent = "Advertisement starts in a moment…";
+    }
+
+    // A short settle prevents a last gameplay tap from landing on the ad.
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    if (!state.ended || generation !== postMatchAdGeneration) return;
+    if (document.visibilityState !== "visible") {
+      unlockReplayAfterAd({ reason: "inactive" });
+      return;
+    }
+
+    const currentAdState = replayAds.snapshot();
+    if (!currentAdState.ready || currentAdState.privacyFormShowing) {
+      unlockReplayAfterAd({ reason: "not-ready" });
+      return;
+    }
+
+    const resumeAudioAfterAd = audio.context?.state === "running" && !state.muted;
+    try {
+      await audio.context?.suspend();
+    } catch {}
+
+    if (document.visibilityState !== "visible") {
+      if (resumeAudioAfterAd) {
+        try {
+          await audio.context?.resume();
+        } catch {}
+      }
+      unlockReplayAfterAd({ reason: "inactive" });
+      return;
+    }
+
+    const result = await replayAds.showReadyInterstitial();
+    if (!state.ended || generation !== postMatchAdGeneration) return;
+
+    if (resumeAudioAfterAd) {
+      try {
+        await audio.context?.resume();
+      } catch {}
+    }
+    unlockReplayAfterAd(result);
   }
 
   function updateCamera(dt) {
@@ -3005,6 +3143,7 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
       muteButton.setAttribute("aria-pressed", String(state.muted));
       muteButton.firstChild.textContent = state.muted ? "SOUND OFF " : "SOUND ON ";
     }
+    void replayAds.setMuted(state.muted);
   }
 
   function clearInputs() {
@@ -3553,6 +3692,7 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
   bindPress(startButton, startGame);
   bindPress(fullscreenButton, toggleFullscreen);
   bindPress(muteButton, toggleMute);
+  bindPress(privacyOptionsButton, () => void replayAds.showPrivacyOptions());
   bindPress(touchPause, togglePause);
 
   // Audio must be unlocked synchronously from a real user gesture on mobile
@@ -3744,6 +3884,11 @@ import { animateCombatCat, createCombatCat } from "./cat-rig.js";
       scheduledSteps: audio.scheduledSteps,
       error: audio.unlockError,
       style: "procedural synthwave: drums, bass, arpeggio, and pads",
+    },
+    ads: {
+      ...replayAds.snapshot(),
+      replayBlocked: replayGateBlocked,
+      placement: "post-match interstitial",
     },
     camera: {
       distanceFromPlayer: +camera.position.distanceTo((localPlayer() || players.p1).pos).toFixed(2),
