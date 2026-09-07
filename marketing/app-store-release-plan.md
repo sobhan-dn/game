@@ -75,7 +75,7 @@ Ship free first and measure retention. The current native iOS build now has the 
 - Cosmetic purchase: sphere trails, player glow colors, projectile skins.
 - No pay-to-win damage or health boosts in version 1.
 
-Before release, replace Google's sample App ID and interstitial unit with identifiers owned by this app, disable testing mode, publish that account's `app-ads.txt` at the root of the verified developer website domain, verify the bundled SKAdNetwork entries against Google's current list, and complete App Store privacy disclosures. Monitor Day-1 retention, ad frequency, and reviews after launch.
+Before release, replace Google's sample App ID and interstitial unit with identifiers owned by this app, disable testing mode, verify the bundled SKAdNetwork entries against Google's current list, and complete App Store privacy disclosures (the App Privacy answers in App Store Connect currently say "Data Not Collected" and need updating once real ads go live). The app's AdMob listing is already verified via `app-ads.txt` on the production site — no action needed there. Monitor Day-1 retention, ad frequency, and reviews after launch.
 
 ## Final Manual Steps
 
@@ -85,7 +85,7 @@ Before release, replace Google's sample App ID and interstitial unit with identi
 4. Archive with Release configuration.
 5. Upload the archive to App Store Connect.
 6. Create the app record and paste the metadata from `fastlane/metadata/en-US`.
-7. Merge the release PR, enable GitHub Pages with GitHub Actions as the publishing source, then confirm `https://sobhan-dn.github.io/game/`, `/support.html`, and `/privacy.html` are live. Publish the production AdMob publisher record at the root-domain `https://sobhan-dn.github.io/app-ads.txt` (not under `/game/`) before submission.
+7. Confirm the production site (`https://void-spheres.abghari.com`, deployed from the separate `mehranabi/speedy-jumper-website` Vercel project) and its `/support`, `/privacy-policy`, and `/app-ads.txt` paths are live before submission. The optional GitHub Pages preview at `https://sobhan-dn.github.io/game/` is unrelated and not what's submitted to App Store Connect.
 8. Add final screenshots and privacy answers.
 9. Paste `marketing/review-notes.txt` into App Review Notes so Apple can test the unique Rift Shard / Rift Surge loop.
 10. Submit for App Review.
