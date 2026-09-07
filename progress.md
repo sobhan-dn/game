@@ -242,3 +242,10 @@ Current character/planet prompt: همه‌ی شخصیت‌ها را به گرب�
 - Set the app owner's real AdMob App ID, `ca-app-pub-1684528554830333~7667706174`, as `GADApplicationIdentifier` in `ios/App/App/Info.plist`, replacing Google's sample App ID.
 - `ads.js` still uses Google's sample interstitial ad unit with `isTesting: true`; the app owner will provide a production interstitial ad unit ID for this app in a follow-up.
 - Per the app owner's request, deleted `scripts/validate-ad-config.mjs` and the `validate:ads`, `validate:ads:production`, and `ios:release:prepare` npm scripts that guarded against archiving with sample AdMob identifiers or `isTesting: true` still enabled. There is no longer an automated check blocking a production archive while `ads.js` still points at the sample interstitial — updated `README.md` and `marketing/app-store-release-plan.md` to describe the manual steps (swap the interstitial ID, set `isTesting: false`, then `npm run ios:sync`) in its place.
+
+## 2026-09-07 Production Interstitial and Version 3.3 TestFlight Prep
+
+- Set the app owner's production interstitial ad unit ID, `ca-app-pub-1684528554830333/7866864766`, in `ads.js`, replacing Google's sample interstitial, and set `isTesting: false`. The app now runs on fully production AdMob identifiers (App ID set earlier the same day, interstitial set now) — this is the first build shipping real, revenue-generating ads.
+- Verified the built bundle (`dist/game.bundle.js`) contains the production ad unit ID and `isTesting:!1` (minified `false`) before archiving.
+- Bumped the app to version 3.3 (build 8), rebuilt/synced the native iOS payload, and archived it for TestFlight.
+- Outstanding before a public App Store submission (not TestFlight): the App Store Connect App Privacy answers still say "Data Not Collected" and need updating to reflect AdMob's actual data collection now that real ads are live.

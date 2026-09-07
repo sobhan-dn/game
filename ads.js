@@ -1,10 +1,9 @@
-const GOOGLE_IOS_TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/4411468910";
+const PRODUCTION_IOS_INTERSTITIAL_ID = "ca-app-pub-1684528554830333/7866864766";
 
 export const replayAdConfig = Object.freeze({
-  // This is the official Google iOS test unit used by Mehran's ad implementation.
-  // Replace it with an ad unit owned by this app before enabling production ads.
-  interstitialId: GOOGLE_IOS_TEST_INTERSTITIAL_ID,
-  isTesting: true,
+  // Production interstitial ad unit owned by this app's AdMob account.
+  interstitialId: PRODUCTION_IOS_INTERSTITIAL_ID,
+  isTesting: false,
   maxAdContentRating: "General",
   moduleTimeoutMs: 8_000,
   consentInfoTimeoutMs: 10_000,
