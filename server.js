@@ -29,9 +29,6 @@ const PUBLIC_FILES = new Set([
   "game.js",
   "game.bundle.js",
   "cat-rig.js",
-  "privacy.html",
-  "privacy-policy.html",
-  "support.html",
 ]);
 const PUBLIC_PREFIXES = ["assets/", "node_modules/three/"];
 const COMPRESSIBLE = new Set([".html", ".css", ".js", ".json", ".svg"]);

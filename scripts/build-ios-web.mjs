@@ -29,9 +29,6 @@ await mkdir(outDir, { recursive: true });
 for (const item of [
   "index.html",
   "styles.css",
-  "support.html",
-  "privacy.html",
-  "privacy-policy.html",
   "assets/textures/cosmic-bg-v2.webp",
   "assets/textures/planet-earth-v1.webp",
   "assets/textures/planet-mars-v1.webp",

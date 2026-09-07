@@ -375,7 +375,7 @@ async function testGameReplayGate() {
     assert.equal(await page.locator("#start-button").isDisabled(), true, "Start must wait for initial UMP resolution");
     assert.equal(await page.evaluate(() => window.__VOID_SPHERES_ADS_TEST__.stats.initializeCount), 0,
       "Google Mobile Ads must not initialize before initial consent settles");
-    assert.match(await page.locator('a[href="./support.html#report-ad"]').getAttribute("href"), /support\.html#report-ad/);
+    assert.match(await page.locator('a[href^="https://void-spheres.abghari.com/support"]').getAttribute("href"), /support#report-ad/);
     await page.evaluate(() => window.__VOID_SPHERES_ADS_TEST__.stats.releaseConsent());
     try {
       await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).ads.ready, undefined, { polling: 100, timeout: 90_000 });

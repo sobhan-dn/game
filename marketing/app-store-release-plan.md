@@ -85,7 +85,7 @@ Before release, replace Google's sample App ID and interstitial unit with identi
 4. Archive with Release configuration.
 5. Upload the archive to App Store Connect.
 6. Create the app record and paste the metadata from `fastlane/metadata/en-US`.
-7. Confirm the production site (`https://void-spheres.abghari.com`, deployed from the separate `mehranabi/speedy-jumper-website` Vercel project) and its `/support`, `/privacy-policy`, and `/app-ads.txt` paths are live before submission. The optional GitHub Pages preview at `https://sobhan-dn.github.io/game/` is unrelated and not what's submitted to App Store Connect.
+7. Confirm the production site (`https://void-spheres.abghari.com`, deployed from the separate `mehranabi/speedy-jumper-website` Vercel project) and its `/support`, `/privacy-policy`, and `/app-ads.txt` paths are live before submission. This repo contains no support/privacy pages or hosting workflow of its own.
 8. Add final screenshots and privacy answers.
 9. Paste `marketing/review-notes.txt` into App Review Notes so Apple can test the unique Rift Shard / Rift Surge loop.
 10. Submit for App Review.

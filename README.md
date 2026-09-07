@@ -58,7 +58,7 @@ In Xcode, select the `App` scheme, set your Apple Developer Team, then archive f
 
 The native iOS build ports the AdMob/Google UMP foundation from Mehran's verified commit `26022c8` without copying that commit's older gameplay. One standard interstitial is preloaded during each two-minute match and shown at the natural post-match break. Replay remains locked only while a ready ad is being presented; consent denial, no-fill, offline use, initialization failure, and show failure all fail open so the game cannot become permanently blocked. The first match and browser preview do not show an ad.
 
-Development currently uses Google's official sample App ID and interstitial unit. Before a production archive, replace both sample IDs with identifiers owned by the app's AdMob account, verify the bundled SKAdNetwork list against Google's current list, and complete the App Store privacy disclosures (the App Privacy answers in App Store Connect still say "Data Not Collected" and need updating once real ads go live). Never test production ad units with ordinary device traffic. The app's AdMob listing is already verified in the Google AdMob console via `app-ads.txt` published on the production website (see below) — no repo changes are needed for that.
+Development currently uses Google's official sample App ID and interstitial unit. Before a production archive, replace both sample IDs with identifiers owned by the app's AdMob account, verify the bundled SKAdNetwork list against Google's current list, and complete the App Store privacy disclosures (the App Privacy answers in App Store Connect still say "Data Not Collected" and need updating once real ads go live). Never test production ad units with ordinary device traffic. The app's AdMob listing is already verified in the Google AdMob console via `app-ads.txt` published on the production website — no repo changes are needed for that. Tapping "Report Ad" in-game opens that production support page directly; this repo does not bundle its own copy.
 
 Run `npm run validate:ads` for development checks. Before opening Xcode for a production archive, run `npm run ios:release:prepare`; it fails while sample identifiers or testing mode remain enabled, then builds and synchronizes the validated native payload.
 
@@ -67,11 +67,6 @@ Run `npm run validate:ads` for development checks. Before opening Xcode for a pr
 - App icon: `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`
 - Store metadata: `fastlane/metadata/en-US/`
 - Release and marketing plan: `marketing/app-store-release-plan.md`
-- Draft privacy/support pages: `marketing/privacy-policy.md` and `marketing/support-page.md`
 - App Review notes: `marketing/review-notes.txt`
 
-Before submission, confirm the App Store support, privacy, and marketing URLs are live. The URLs actually submitted in App Store Connect (`fastlane/metadata/en-US/`) point to the production site at `https://void-spheres.abghari.com`, which is a separate repo/deployment: [`mehranabi/speedy-jumper-website`](https://github.com/mehranabi/speedy-jumper-website), hosted on Vercel. Core gameplay does not depend on the website or an account; ad delivery and privacy messages require network access when available.
-
-## Publish the optional web preview
-
-The included `.github/workflows/pages.yml` builds and publishes an optional, ad-free browser preview plus static support/privacy pages to `https://sobhan-dn.github.io/game/` after changes land on `master`. This GitHub Pages preview is separate from — and not a substitute for — the production `void-spheres.abghari.com` site above; only the native iOS package initializes AdMob.
+Before submission, confirm the App Store support, privacy, and marketing URLs are live. This repo is game code only — the support, privacy policy, and marketing pages submitted in App Store Connect (`fastlane/metadata/en-US/`) are built and hosted from the separate [`mehranabi/speedy-jumper-website`](https://github.com/mehranabi/speedy-jumper-website) repo on Vercel, at `https://void-spheres.abghari.com`. Core gameplay does not depend on the website or an account; ad delivery and privacy messages require network access when available.
