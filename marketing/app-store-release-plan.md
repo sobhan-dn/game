@@ -75,11 +75,11 @@ Ship free first and measure retention. The current native iOS build now has the 
 - Cosmetic purchase: sphere trails, player glow colors, projectile skins.
 - No pay-to-win damage or health boosts in version 1.
 
-Before release, replace Google's sample App ID and interstitial unit with identifiers owned by this app, disable testing mode, verify the bundled SKAdNetwork entries against Google's current list, and complete App Store privacy disclosures (the App Privacy answers in App Store Connect currently say "Data Not Collected" and need updating once real ads go live). The app's AdMob listing is already verified via `app-ads.txt` on the production site — no action needed there. Monitor Day-1 retention, ad frequency, and reviews after launch.
+The production AdMob App ID (`ca-app-pub-1684528554830333~7667706174`) is already set. Before release, create a production interstitial ad unit for this app and swap it into `ads.js` in place of Google's sample unit, disable `isTesting`, verify the bundled SKAdNetwork entries against Google's current list, and complete App Store privacy disclosures (the App Privacy answers in App Store Connect currently say "Data Not Collected" and need updating once real ads go live). The app's AdMob listing is already verified via `app-ads.txt` on the production site — no action needed there. Monitor Day-1 retention, ad frequency, and reviews after launch.
 
 ## Final Manual Steps
 
-1. Replace the sample identifiers, then run `npm run ios:release:prepare`; do not archive if this production guard fails. Open `ios/App/App.xcodeproj` in Xcode afterward.
+1. Replace the sample interstitial unit in `ads.js` and set `isTesting: false`, then run `npm run ios:sync`. Open `ios/App/App.xcodeproj` in Xcode afterward.
 2. Select target `App`, set the Apple Developer Team, and confirm bundle ID ownership.
 3. Build on a real iPhone and verify offline fallback, consent/privacy options, one post-match ad per completed match, touch controls, icon, launch screen, and audio restoration.
 4. Archive with Release configuration.
